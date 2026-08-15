@@ -5,30 +5,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全球地图 · GOGPT 数据观察站</title>
-<meta name="description" content="全球 13,895 台油气发电机组逐一上图：按状态着色、按容量定大小，点击查看电厂详情。">
-<link rel="stylesheet" href="assets/layout.css">
+<meta name="description" content="全球 13,895 台油气发电机组逐一上图：按状态着色、按容量定大小，支持搜索定位、排行联动与全屏浏览。">
+<link rel="stylesheet" href="assets/layout.css?v=2">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" style="padding-top:1.2rem">
 
-<div class="page-head">
-  <div class="overline">全球地图</div>
-  <h1>13,895 台机组，逐一上图</h1>
-  <div class="sub">点大小对应装机容量，颜色对应运营状态。点击状态胶囊可单独查看某类项目；点击地图上的点查看电厂详情；右侧排行可按国家快速定位。</div>
-</div>
-
-<div class="map-toolbar">
-  <div class="chips" id="status-chips"></div>
-  <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-    <select id="f-region" class="map-select"><option value="">全部大区</option></select>
-    <select id="f-fuel" class="map-select"><option value="">全部燃料</option></select>
-    <button class="reset" id="f-reset">重置</button>
+<div class="map-tb">
+  <div class="map-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    全球机组地图
   </div>
+  <div class="chips" id="status-chips"></div>
+  <span style="flex:1"></span>
+  <select id="f-region" class="map-select"><option value="">全部大区</option></select>
+  <select id="f-fuel" class="map-select"><option value="">全部燃料</option></select>
+  <div class="map-search">
+    <span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+    <input type="text" id="cty-search" placeholder="搜索国家定位（中/英）…" autocomplete="off">
+    <div class="map-sug" id="cty-sug"></div>
+  </div>
+  <button class="reset" id="f-reset" style="background:transparent;color:var(--muted);border:1px dashed var(--rule);border-radius:8px;padding:0.4rem 0.85rem;font-size:0.8rem;cursor:pointer">重置</button>
 </div>
+
+<div class="map-kpis" id="map-kpis"></div>
 
 <div class="map-layout">
-  <div class="map-panel">
+  <div class="map-panel" id="map-panel">
     <div id="chart-map"></div>
+    <div class="map-ctl">
+      <button id="btn-home" title="复位视角"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></button>
+      <button id="btn-fs" title="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+    </div>
     <div class="detail-card" id="detail-card">
       <button class="dc-close" id="dc-close">×</button>
       <h4 id="dc-name"></h4>
@@ -39,48 +47,75 @@
   </div>
   <aside class="side-panel">
     <h3>国家/地区排行</h3>
-    <div class="sub" id="side-sub">按当前筛选的装机容量排序，点击定位</div>
+    <div class="sub" id="side-sub"></div>
+    <div class="seg" id="rank-seg">
+      <button data-m="cap" class="on">装机 GW</button>
+      <button data-m="units">机组数</button>
+      <button data-m="plants">电厂数</button>
+    </div>
     <div id="rank-list"></div>
+    <div class="map-note">点击排行或搜索国家可在地图上定位；点大小对应装机容量，颜色对应状态；开发中项目带涟漪动效。滚轮/双指缩放，拖拽平移。</div>
   </aside>
 </div>
 
 </div>
-<style>
-.map-select {
-  background: var(--bg); color: var(--ink); border: 1px solid var(--rule);
-  border-radius: 8px; padding: 0.38rem 0.65rem; font-size: 0.82rem; outline: none; min-width: 110px;
-}
-.map-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
-.reset {
-  background: transparent; color: var(--muted); border: 1px dashed var(--rule);
-  border-radius: 8px; padding: 0.38rem 0.85rem; font-size: 0.8rem; cursor: pointer;
-}
-.reset:hover { color: var(--accent); border-color: var(--accent); }
-</style>
 <script src="./_shared/js/echarts.min.js"></script>
 <script src="assets/world.js"></script>
 <script src="assets/data.js"></script>
-<script src="assets/site.js"></script>
+<script src="assets/site.js?v=2"></script>
 <script>
 (function() {
+  'use strict';
   var S = window.SITE, RAW = window.GOGPT_DATA;
   var params = S.getParams();
-  // 地图页默认显示开发中以外的全部状态（即全部）；支持 URL 传入 status 列表
   var state = {
     statuses: params.status.length ? params.status.slice() : S.STATUS_ORDER.slice(),
-    region: params.region, fuel: params.fuel, country: params.country
+    region: params.region, fuel: params.fuel, country: params.country || '',
+    metric: 'cap'
   };
+  var DEF_VIEW = { center: [12, 22], zoom: 1.18 };
+  var curView = { center: DEF_VIEW.center.slice(), zoom: DEF_VIEW.zoom };
 
-  // ===== 筛选控件 =====
+  /* ===== 国家索引（搜索建议 + 定位） ===== */
+  var CTY = {};
+  RAW.forEach(function(r) {
+    if (!r[7] || !r[8]) return;
+    var c = CTY[r[2]];
+    if (!c) c = CTY[r[2]] = { en: r[2], cn: S.cnCountry(r[2]), units: 0, lngs: [], lats: [] };
+    c.units++;
+    if (c.lngs.length < 400) { c.lngs.push(r[8]); c.lats.push(r[7]); }
+  });
+  function ctyView(en) {
+    var c = CTY[en]; if (!c) return null;
+    var span = function(a) { return Math.max.apply(null, a) - Math.min.apply(null, a); };
+    var sl = span(c.lngs), st = span(c.lats);
+    var s = Math.max(sl, st * 1.6);
+    var zoom = s < 6 ? 7 : s < 14 ? 5.5 : s < 30 ? 4 : s < 60 ? 3 : 2.2;
+    return {
+      center: [(Math.min.apply(null, c.lngs) + Math.max.apply(null, c.lngs)) / 2,
+               (Math.min.apply(null, c.lats) + Math.max.apply(null, c.lats)) / 2],
+      zoom: zoom
+    };
+  }
+
+  /* ===== 筛选控件 ===== */
   var chipsEl = document.getElementById('status-chips');
+  var rfFiltered = RAW; // 仅大区/燃料（供 chips 计数，与状态筛选无关）
+  function baseFiltered() {
+    return RAW.filter(function(r) {
+      if (state.region && r[3] !== state.region) return false;
+      if (state.fuel && r[5] !== state.fuel) return false;
+      return true;
+    });
+  }
   function renderChips() {
+    var cnt = {};
+    rfFiltered.forEach(function(r) { cnt[r[4]] = (cnt[r[4]] || 0) + 1; });
     chipsEl.innerHTML = S.STATUS_ORDER.map(function(st) {
       var on = state.statuses.indexOf(st) >= 0;
-      var n = 0;
-      RAW.forEach(function(r) { if (r[4] === st) n++; });
       return '<span class="chip' + (on ? ' on' : '') + '" data-st="' + st + '">' +
         '<span class="dot" style="--dot:' + S.STATUS_COLOR[st] + '"></span>' + st +
-        '<span class="n">' + n.toLocaleString() + '</span></span>';
+        '<span class="n">' + (cnt[st] || 0).toLocaleString() + '</span></span>';
     }).join('');
     Array.prototype.forEach.call(chipsEl.querySelectorAll('.chip'), function(el) {
       el.addEventListener('click', function() {
@@ -110,16 +145,38 @@
   document.getElementById('f-region').addEventListener('change', function() { state.region = this.value; applyFilter(); });
   document.getElementById('f-fuel').addEventListener('change', function() { state.fuel = this.value; applyFilter(); });
   document.getElementById('f-reset').addEventListener('click', function() {
-    state = { statuses: S.STATUS_ORDER.slice(), region: '', fuel: '', country: '' };
+    state = { statuses: S.STATUS_ORDER.slice(), region: '', fuel: '', country: '', metric: state.metric };
     document.getElementById('f-region').value = '';
     document.getElementById('f-fuel').value = '';
+    document.getElementById('cty-search').value = '';
+    homeView();
     applyFilter();
   });
 
-  // ===== 地图 =====
+  /* ===== KPI ===== */
+  function renderKpis(rows) {
+    var plants = {}, ctrys = {}, cap = 0, opCap = 0;
+    rows.forEach(function(r) {
+      plants[r[0]] = 1; ctrys[r[2]] = 1; cap += r[6];
+      if (r[4] === '在运') opCap += r[6];
+    });
+    var items = [
+      ['机组', rows.length.toLocaleString(), '台'],
+      ['总装机', (cap / 1000).toFixed(1), 'GW'],
+      ['覆盖国家/地区', Object.keys(ctrys).length, ''],
+      ['在运装机占比', cap ? (opCap / cap * 100).toFixed(0) : '0', '%']
+    ];
+    document.getElementById('map-kpis').innerHTML = items.map(function(it) {
+      return '<div class="mkpi"><span class="ml">' + it[0] + '</span><span class="mv">' + it[1] + '</span>' + (it[2] ? '<span class="mu">' + it[2] + '</span>' : '') + '</div>';
+    }).join('');
+  }
+
+  /* ===== 地图 ===== */
   echarts.registerMap('world', window.WORLD_GEOJSON);
   var map = echarts.init(document.getElementById('chart-map'));
-  window.addEventListener('resize', function() { map.resize(); });
+  var resizeT = null;
+  window.addEventListener('resize', function() { clearTimeout(resizeT); resizeT = setTimeout(function() { map.resize(); }, 120); });
+  document.addEventListener('fullscreenchange', function() { setTimeout(function() { map.resize(); }, 80); });
   var filtered = RAW;
 
   function renderMap() {
@@ -129,17 +186,22 @@
         filtered.forEach(function(r) {
           if (r[4] === st && r[7] && r[8]) pts.push({ name: r[0], value: [r[8], r[7], r[6]], row: r });
         });
-        return {
-          name: st, type: 'scatter', coordinateSystem: 'geo', data: pts,
+        pts.sort(function(a, b) { return a.value[2] - b.value[2]; }); // 小点先渲染，大点在上层
+        var isDev = S.DEV_STATUSES.indexOf(st) >= 0;
+        var base = {
+          name: st, type: isDev ? 'effectScatter' : 'scatter', coordinateSystem: 'geo', data: pts,
           symbolSize: function(v) { return Math.max(3, Math.min(28, Math.sqrt(v[2]) / 2.2)); },
           itemStyle: { color: S.STATUS_COLOR[st], opacity: 0.85, borderColor: '#ffffff', borderWidth: 0.8,
             shadowBlur: 3, shadowColor: 'rgba(27,36,48,.25)' },
-          emphasis: { itemStyle: { opacity: 1 } }
+          emphasis: { itemStyle: { opacity: 1 }, scale: 1.35 },
+          z: isDev ? 4 : 3
         };
+        if (isDev) base.rippleEffect = { brushType: 'stroke', scale: 3.2, period: 4.5 };
+        return base;
       });
     map.setOption({
-      animation: false,
-      backgroundColor: '#eef2f4',
+      animation: true, animationDurationUpdate: 600, animationEasingUpdate: 'cubicInOut',
+      backgroundColor: '#d9e5ea',
       tooltip: Object.assign({}, S.EC.tooltip, {
         formatter: function(p) {
           var r = p.data.row;
@@ -149,28 +211,47 @@
       }),
       legend: { show: false },
       geo: {
-        map: 'world', roam: true, zoom: 1.15, top: 20, bottom: 20,
-        itemStyle: { areaColor: '#e2e6e2', borderColor: '#ffffff', borderWidth: 0.7 },
-        emphasis: { itemStyle: { areaColor: '#e2e6e2' }, label: { show: false } },
+        map: 'world', roam: true, zoom: curView.zoom, center: curView.center,
+        top: 14, bottom: 14, left: 14, right: 14,
+        scaleLimit: { min: 0.9, max: 14 },
+        itemStyle: { areaColor: '#e9e6dd', borderColor: '#ffffff', borderWidth: 0.7 },
+        emphasis: { itemStyle: { areaColor: '#e3e8e2', borderColor: '#9fb8ad', borderWidth: 1 }, label: { show: false } },
         select: { disabled: true }
       },
       series: series
     }, { notMerge: true });
   }
+  map.on('georoam', function() {
+    var opt = map.getOption();
+    if (opt.geo && opt.geo[0]) curView = { center: opt.geo[0].center, zoom: opt.geo[0].zoom };
+  });
 
-  // 点击散点 → 详情卡
+  function flyTo(view) {
+    curView = { center: view.center.slice(), zoom: view.zoom };
+    map.setOption({ geo: { center: curView.center, zoom: curView.zoom } });
+  }
+  function homeView() { flyTo(DEF_VIEW); }
+  document.getElementById('btn-home').addEventListener('click', homeView);
+  document.getElementById('btn-fs').addEventListener('click', function() {
+    var p = document.getElementById('map-panel');
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (p.requestFullscreen) p.requestFullscreen();
+  });
+
+  /* ===== 点击散点 → 详情卡 ===== */
   map.on('click', function(p) {
     if (!p.data || !p.data.row) return;
-    var r = p.data.row;
+    var r = p.data.row, e = S.esc;
     document.getElementById('dc-name').textContent = r[0];
     document.getElementById('dc-sub').textContent = S.cnCountry(r[2]) + ' · ' + r[3] + ' · 机组 ' + r[1];
     var stColor = S.STATUS_COLOR[r[4]] || '#9aa3b2';
     document.getElementById('dc-grid').innerHTML =
       '<div class="k">状态</div><div class="v"><span class="badge" style="background:' + stColor + '1f;color:' + stColor + '">' + r[4] + '</span></div>' +
       '<div class="k">容量</div><div class="v">' + r[6].toLocaleString() + ' MW</div>' +
-      '<div class="k">燃料</div><div class="v">' + r[5] + '</div>' +
-      (r[9] ? '<div class="k">投运年份</div><div class="v">' + r[9] + '</div>' : '') +
-      (r[10] ? '<div class="k">业主</div><div class="v" style="font-family:inherit">' + S.esc(r[10]) + '</div>' : '');
+      '<div class="k">燃料</div><div class="v">' + e(r[5]) + '</div>' +
+      '<div class="k">投运年份</div><div class="v">' + (r[9] || '—') + '</div>' +
+      '<div class="k">业主</div><div class="v" style="font-family:inherit">' + (r[10] ? e(r[10]) : '—') + '</div>' +
+      '<div class="k">坐标</div><div class="v">' + (+r[7]).toFixed(2) + ', ' + (+r[8]).toFixed(2) + '</div>';
     var link = document.getElementById('dc-link');
     if (r[11]) { link.href = r[11]; link.style.display = 'inline-block'; }
     else link.style.display = 'none';
@@ -180,42 +261,109 @@
     document.getElementById('detail-card').classList.remove('show');
   });
 
-  // ===== 侧栏排行 =====
-  function renderRank() {
-    var byCty = S.groupSum(filtered, 2).slice(0, 15);
-    var max = byCty.length ? byCty[0].value : 1;
-    document.getElementById('rank-list').innerHTML = byCty.map(function(d, i) {
-      return '<div class="rank-row" data-cty="' + S.esc(d.name) + '">' +
-        '<span class="rank-i">' + (i + 1) + '</span>' +
-        '<span class="rank-name">' + S.esc(S.cnCountry(d.name)) + '</span>' +
-        '<span class="rank-bar"><i style="width:' + Math.max(4, d.value / max * 100).toFixed(0) + '%"></i></span>' +
-        '<span class="rank-val">' + d.value.toFixed(1) + '</span></div>';
-    }).join('') || '<div style="font-size:0.8rem;color:var(--faint)">无匹配数据</div>';
-    Array.prototype.forEach.call(document.querySelectorAll('.rank-row'), function(el) {
-      el.addEventListener('click', function() {
-        state.country = el.getAttribute('data-cty');
-        applyFilter();
-        var rows = filtered.filter(function(r) { return r[7] && r[8]; });
-        if (rows.length) {
-          var lngs = rows.map(function(r) { return r[8]; }), lats = rows.map(function(r) { return r[7]; });
-          var cLng = (Math.min.apply(null, lngs) + Math.max.apply(null, lngs)) / 2;
-          var cLat = (Math.min.apply(null, lats) + Math.max.apply(null, lats)) / 2;
-          map.setOption({ geo: { center: [cLng, cLat], zoom: 4 } });
-        }
-      });
+  /* ===== 搜索定位 ===== */
+  var sugEl = document.getElementById('cty-sug'), qEl = document.getElementById('cty-search');
+  function sugMatches(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    var out = [];
+    Object.keys(CTY).forEach(function(en) {
+      var c = CTY[en];
+      if (en.toLowerCase().indexOf(q) >= 0 || c.cn.toLowerCase().indexOf(q) >= 0) out.push(c);
     });
-    document.getElementById('side-sub').textContent =
-      '按当前筛选的装机容量排序（' + filtered.length.toLocaleString() + ' 台机组）';
+    out.sort(function(a, b) { return b.units - a.units; });
+    return out.slice(0, 8);
+  }
+  qEl.addEventListener('input', function() {
+    var ms = sugMatches(qEl.value);
+    if (!ms.length) { sugEl.classList.remove('show'); return; }
+    sugEl.innerHTML = ms.map(function(c, i) {
+      return '<div class="sg-item' + (i === 0 ? ' sel' : '') + '" data-en="' + S.esc(c.en) + '"><span>' + S.esc(c.cn) + ' <span style="color:var(--faint);font-size:0.74rem">' + S.esc(c.en) + '</span></span><span class="sg-n">' + c.units.toLocaleString() + ' 台</span></div>';
+    }).join('');
+    sugEl.classList.add('show');
+    Array.prototype.forEach.call(sugEl.querySelectorAll('.sg-item'), function(el) {
+      el.addEventListener('mousedown', function(ev) { ev.preventDefault(); pickCty(el.getAttribute('data-en')); });
+    });
+  });
+  qEl.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var sel = sugEl.querySelector('.sg-item.sel');
+    if (sel) pickCty(sel.getAttribute('data-en'));
+  });
+  qEl.addEventListener('blur', function() { setTimeout(function() { sugEl.classList.remove('show'); }, 180); });
+  function pickCty(en) {
+    state.country = en;
+    qEl.value = CTY[en] ? CTY[en].cn : en;
+    sugEl.classList.remove('show');
+    applyFilter();
+    var v = ctyView(en);
+    if (v) flyTo(v);
   }
 
-  function applyFilter() {
-    filtered = S.filterRows(RAW, {
-      region: state.region, status: state.statuses, fuel: state.fuel,
-      country: state.country, kw: ''
+  /* ===== 侧栏排行 ===== */
+  var METRIC_LABEL = { cap: '装机 GW', units: '机组数', plants: '电厂数' };
+  function rankData(rows) {
+    var m = {};
+    rows.forEach(function(r) {
+      var g = m[r[2]] || (m[r[2]] = { cap: 0, units: 0, plants: {} });
+      g.cap += r[6]; g.units++; g.plants[r[0]] = 1;
     });
-    renderChips(); renderMap(); renderRank();
+    return Object.keys(m).map(function(k) {
+      return { name: k, cap: m[k].cap / 1000, units: m[k].units, plants: Object.keys(m[k].plants).length };
+    });
+  }
+  function renderRank() {
+    var all = rankData(filtered).sort(function(a, b) { return b[state.metric] - a[state.metric]; });
+    var top = all.slice(0, 15);
+    var total = all.reduce(function(s, d) { return s + d[state.metric]; }, 0) || 1;
+    var max = top.length ? top[0][state.metric] : 1;
+    var fmt = function(v) { return state.metric === 'cap' ? v.toFixed(1) : v.toLocaleString(); };
+    document.getElementById('rank-list').innerHTML = top.map(function(d, i) {
+      return '<div class="rank-row' + (state.country === d.name ? ' on-cty' : '') + '" data-cty="' + S.esc(d.name) + '">' +
+        '<span class="rank-i">' + (i + 1) + '</span>' +
+        '<span class="rank-name">' + S.esc(S.cnCountry(d.name)) + '</span>' +
+        '<span class="rank-bar"><i style="width:' + Math.max(4, d[state.metric] / max * 100).toFixed(0) + '%"></i></span>' +
+        '<span class="rank-pct">' + (d[state.metric] / total * 100).toFixed(0) + '%</span>' +
+        '<span class="rank-val">' + fmt(d[state.metric]) + '</span></div>';
+    }).join('') || '<div class="rank-empty">无匹配数据</div>';
+    Array.prototype.forEach.call(document.querySelectorAll('.rank-row'), function(el) {
+      el.addEventListener('click', function() { pickCty(el.getAttribute('data-cty')); });
+    });
+    document.getElementById('side-sub').textContent =
+      '按' + METRIC_LABEL[state.metric] + '排序 · ' + filtered.length.toLocaleString() + ' 台机组';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#rank-seg button'), function(btn) {
+    btn.addEventListener('click', function() {
+      state.metric = btn.getAttribute('data-m');
+      Array.prototype.forEach.call(document.querySelectorAll('#rank-seg button'), function(b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      renderRank();
+    });
+  });
+
+  /* ===== URL 同步 + 主流程 ===== */
+  function syncUrl() {
+    var q = new URLSearchParams();
+    if (state.statuses.length && state.statuses.length !== S.STATUS_ORDER.length) q.set('status', state.statuses.join(','));
+    if (state.region) q.set('region', state.region);
+    if (state.fuel) q.set('fuel', state.fuel);
+    if (state.country) q.set('country', state.country);
+    var s = q.toString();
+    history.replaceState(null, '', s ? '?' + s : location.pathname);
+  }
+  function applyFilter() {
+    rfFiltered = baseFiltered();
+    filtered = S.filterRows(rfFiltered, { status: state.statuses, country: '', kw: '' });
+    if (state.country) filtered = filtered.filter(function(r) { return r[2] === state.country; });
+    renderChips(); renderKpis(filtered); renderMap(); renderRank(); syncUrl();
   }
   applyFilter();
+  if (state.country) {
+    qEl.value = CTY[state.country] ? CTY[state.country].cn : state.country;
+    var v0 = ctyView(state.country);
+    if (v0) curView = { center: v0.center.slice(), zoom: v0.zoom };
+    renderMap();
+  }
 })();
 </script>
 </body>
