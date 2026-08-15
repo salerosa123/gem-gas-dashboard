@@ -1,8 +1,8 @@
 (function() {
   var style = getComputedStyle(document.documentElement);
   function cv(n) { return style.getPropertyValue(n).trim(); }
-  var accent = cv('--accent'), accent2 = cv('--accent2'), ink = cv('--ink'),
-      muted = cv('--muted'), rule = cv('--rule'), bg2 = cv('--bg2'), bg3 = cv('--bg3');
+  var accent = cv('--accent'), accentInk = cv('--accent-ink'), ink = cv('--ink'),
+      muted = cv('--muted'), faint = cv('--faint'), rule = cv('--rule'), amber = cv('--amber');
 
   var RAW = window.GOGPT_DATA;
   // 列: 0电厂 1机组 2国家 3大区 4状态 5燃料大类 6容量MW 7lat 8lng 9投运年份 10业主 11wiki
@@ -81,21 +81,27 @@
     var countries = {};
     filtered.forEach(function(r) { countries[r[2]] = 1; });
     var kpis = [
-      { num: filtered.length.toLocaleString(), label: '机组数量（条）' },
-      { num: totalCap.toFixed(1), unit: 'GW', label: '总装机容量' },
-      { num: opCap.toFixed(1), unit: 'GW', label: '在运容量', teal: true },
-      { num: devCap.toFixed(1), unit: 'GW', label: '开发中容量（在建+前期+宣布）' },
-      { num: Object.keys(countries).length, label: '覆盖国家/地区' }
+      { num: filtered.length.toLocaleString(), label: '机组数量（条）', color: accent },
+      { num: totalCap.toFixed(1), unit: 'GW', label: '总装机容量', color: accentInk },
+      { num: opCap.toFixed(1), unit: 'GW', label: '在运容量', color: STATUS_COLOR['在运'] },
+      { num: devCap.toFixed(1), unit: 'GW', label: '开发中容量（在建+前期+宣布）', color: STATUS_COLOR['在建'] },
+      { num: Object.keys(countries).length, label: '覆盖国家/地区', color: muted }
     ];
     document.getElementById('kpis').innerHTML = kpis.map(function(k) {
-      return '<div class="kpi"><div class="num' + (k.teal ? ' teal' : '') + '">' + k.num +
-        (k.unit ? '<span class="unit">' + k.unit + '</span>' : '') + '</div><div class="label">' + k.label + '</div></div>';
+      return '<div class="kpi" style="--kpi-color:' + k.color + '"><div class="label">' + k.label + '</div>' +
+        '<div class="num">' + k.num + (k.unit ? '<span class="unit">' + k.unit + '</span>' : '') + '</div></div>';
     }).join('');
     document.getElementById('f-count').innerHTML = '当前筛选 <b>' + filtered.length.toLocaleString() + '</b> 条';
   }
 
-  var tooltipBase = { appendToBody: true, backgroundColor: bg3, borderColor: rule,
-    textStyle: { color: ink, fontSize: 12 } };
+  var tooltipBase = {
+    appendToBody: true, backgroundColor: '#ffffff', borderColor: rule, borderWidth: 1,
+    padding: [8, 12], textStyle: { color: ink, fontSize: 12 },
+    extraCssText: 'box-shadow:0 4px 16px rgba(27,36,48,.12);border-radius:8px;'
+  };
+  var axisLabelStyle = { color: muted, fontSize: 11 };
+  var splitLineStyle = { lineStyle: { color: '#eeece6' } };
+  var axisLineStyle = { lineStyle: { color: rule } };
 
   function renderMap() {
     if (!charts.map) {
@@ -111,12 +117,14 @@
       return {
         name: st, type: 'scatter', coordinateSystem: 'geo', data: pts,
         symbolSize: function(v) { return Math.max(3, Math.min(26, Math.sqrt(v[2]) / 2.2)); },
-        itemStyle: { color: STATUS_COLOR[st], opacity: 0.75, borderColor: 'rgba(0,0,0,0.25)', borderWidth: 0.5 },
+        itemStyle: { color: STATUS_COLOR[st], opacity: 0.85, borderColor: '#ffffff', borderWidth: 0.8,
+          shadowBlur: 3, shadowColor: 'rgba(27,36,48,.25)' },
         emphasis: { itemStyle: { opacity: 1 } }
       };
     });
     charts.map.setOption({
       animation: false,
+      backgroundColor: '#eef2f4',
       tooltip: Object.assign({}, tooltipBase, {
         formatter: function(p) {
           var r = p.data.row;
@@ -125,11 +133,12 @@
             (r[9] ? '<br/>投运 ' + r[9] : '');
         }
       }),
-      legend: { top: 6, textStyle: { color: muted, fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll' },
+      legend: { top: 10, textStyle: { color: muted, fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll',
+        inactiveColor: '#c8cfd8' },
       geo: {
-        map: 'world', roam: true, zoom: 1.15, top: 44,
-        itemStyle: { areaColor: bg3, borderColor: rule, borderWidth: 0.6 },
-        emphasis: { itemStyle: { areaColor: bg3 }, label: { show: false } },
+        map: 'world', roam: true, zoom: 1.15, top: 48,
+        itemStyle: { areaColor: '#e2e6e2', borderColor: '#ffffff', borderWidth: 0.7 },
+        emphasis: { itemStyle: { areaColor: '#e2e6e2' }, label: { show: false } },
         select: { disabled: true }
       },
       series: series
@@ -144,15 +153,15 @@
     var data = groupSum(filtered, 4, STATUS_ORDER);
     charts.status.setOption({
       animation: false,
-      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/>' + p.value.toFixed(1) + ' GW'; } }),
-      grid: { left: 70, right: 40, top: 10, bottom: 24 },
-      xAxis: { type: 'value', axisLabel: { color: muted }, splitLine: { lineStyle: { color: rule } } },
+      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW'; } }),
+      grid: { left: 70, right: 46, top: 12, bottom: 26 },
+      xAxis: { type: 'value', axisLabel: axisLabelStyle, splitLine: splitLineStyle },
       yAxis: { type: 'category', inverse: true, data: data.map(function(d) { return d.name; }),
-        axisLabel: { color: ink }, axisLine: { lineStyle: { color: rule } } },
+        axisLabel: { color: ink, fontSize: 12 }, axisLine: axisLineStyle, axisTick: { show: false } },
       series: [{
         type: 'bar', barWidth: 16,
-        data: data.map(function(d) { return { value: +d.value.toFixed(2), itemStyle: { color: STATUS_COLOR[d.name] || muted, borderRadius: [0, 4, 4, 0] } }; }),
-        label: { show: true, position: 'right', color: muted, formatter: function(p) { return p.value.toFixed(1); } }
+        data: data.map(function(d) { return { value: +d.value.toFixed(2), itemStyle: { color: STATUS_COLOR[d.name] || faint, borderRadius: [0, 5, 5, 0] } }; }),
+        label: { show: true, position: 'right', color: muted, fontSize: 11, formatter: function(p) { return p.value.toFixed(1); } }
       }]
     }, { notMerge: true });
   }
@@ -165,13 +174,15 @@
     var data = groupSum(filtered, 3);
     charts.region.setOption({
       animation: false,
-      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/>' + p.value.toFixed(1) + ' GW (' + p.percent + '%)'; } }),
-      legend: { bottom: 0, textStyle: { color: muted }, itemWidth: 12, itemHeight: 8 },
-      color: [accent, accent2, cv('--c-shelved'), cv('--c-construction'), muted],
+      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW (' + p.percent + '%)'; } }),
+      legend: { bottom: 0, textStyle: { color: muted, fontSize: 11 }, itemWidth: 12, itemHeight: 8 },
+      color: [accent, '#e8a33d', '#8f77d4', '#4f8fd0', '#94a3b8'],
       series: [{
-        type: 'pie', radius: ['42%', '68%'], center: ['50%', '46%'],
-        label: { color: ink, formatter: '{b}\n{d}%', fontSize: 11 },
-        itemStyle: { borderColor: bg2, borderWidth: 2 },
+        type: 'pie', radius: ['46%', '70%'], center: ['50%', '46%'],
+        label: { color: ink, formatter: '{b}\n{d}%', fontSize: 11, lineHeight: 15 },
+        labelLine: { lineStyle: { color: faint } },
+        itemStyle: { borderColor: '#ffffff', borderWidth: 2, borderRadius: 4 },
+        emphasis: { scaleSize: 6 },
         data: data.map(function(d) { return { name: d.name, value: +d.value.toFixed(2) }; })
       }]
     }, { notMerge: true });
@@ -185,18 +196,18 @@
     var data = groupSum(filtered, 5, FUEL_ORDER).filter(function(d) { return d.value > 0; });
     charts.fuel.setOption({
       animation: false,
-      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/>' + p.value.toFixed(1) + ' GW'; } }),
-      grid: { left: 90, right: 46, top: 10, bottom: 24 },
-      xAxis: { type: 'value', axisLabel: { color: muted }, splitLine: { lineStyle: { color: rule } } },
+      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW'; } }),
+      grid: { left: 90, right: 50, top: 12, bottom: 26 },
+      xAxis: { type: 'value', axisLabel: axisLabelStyle, splitLine: splitLineStyle },
       yAxis: { type: 'category', inverse: true, data: data.map(function(d) { return d.name; }),
-        axisLabel: { color: ink }, axisLine: { lineStyle: { color: rule } } },
+        axisLabel: { color: ink, fontSize: 12 }, axisLine: axisLineStyle, axisTick: { show: false } },
       series: [{
         type: 'bar', barWidth: 18,
         data: data.map(function(d, i) {
-          var cols = [accent2, accent, cv('--c-cancelled'), cv('--c-shelved'), muted];
-          return { value: +d.value.toFixed(2), itemStyle: { color: cols[i % cols.length], borderRadius: [0, 4, 4, 0] } };
+          var cols = [accent, '#e8a33d', '#d4536a', '#8f77d4', '#94a3b8'];
+          return { value: +d.value.toFixed(2), itemStyle: { color: cols[i % cols.length], borderRadius: [0, 5, 5, 0] } };
         }),
-        label: { show: true, position: 'right', color: muted, formatter: function(p) { return p.value.toFixed(1); } }
+        label: { show: true, position: 'right', color: muted, fontSize: 11, formatter: function(p) { return p.value.toFixed(1); } }
       }]
     }, { notMerge: true });
   }
@@ -209,15 +220,19 @@
     var data = groupSum(filtered, 2).slice(0, 15);
     charts.country.setOption({
       animation: false,
-      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/>' + p.value.toFixed(1) + ' GW'; } }),
-      grid: { left: 8, right: 20, top: 10, bottom: 64, containLabel: true },
+      tooltip: Object.assign({}, tooltipBase, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW'; } }),
+      grid: { left: 8, right: 20, top: 14, bottom: 64, containLabel: true },
       xAxis: { type: 'category', data: data.map(function(d) { return cnCountry(d.name); }),
-        axisLabel: { color: muted, rotate: 38, fontSize: 10 }, axisLine: { lineStyle: { color: rule } } },
-      yAxis: { type: 'value', axisLabel: { color: muted }, splitLine: { lineStyle: { color: rule } } },
+        axisLabel: { color: muted, rotate: 38, fontSize: 10 }, axisLine: axisLineStyle, axisTick: { show: false } },
+      yAxis: { type: 'value', axisLabel: axisLabelStyle, splitLine: splitLineStyle },
       series: [{
         type: 'bar', barWidth: 14,
-        data: data.map(function(d) { return +d.value.toFixed(2); }),
-        itemStyle: { color: accent, borderRadius: [4, 4, 0, 0] }
+        data: data.map(function(d, i) {
+          var t = 1 - i / 15;
+          return { value: +d.value.toFixed(2), itemStyle: {
+            color: t > 0.85 ? accentInk : (t > 0.4 ? accent : '#5aa89e'),
+            borderRadius: [4, 4, 0, 0] } };
+        })
       }]
     }, { notMerge: true });
   }
@@ -241,19 +256,22 @@
     var labels = years.map(function(y) { return y === 1979 ? '<1980' : String(y); });
     charts.year.setOption({
       animation: false,
-      tooltip: Object.assign({}, tooltipBase, { trigger: 'axis' }),
-      legend: { top: 0, textStyle: { color: muted } },
-      grid: { left: 56, right: 56, top: 34, bottom: 44 },
-      xAxis: { type: 'category', data: labels, axisLabel: { color: muted, fontSize: 10 }, axisLine: { lineStyle: { color: rule } } },
+      tooltip: Object.assign({}, tooltipBase, { trigger: 'axis', axisPointer: { type: 'shadow' } }),
+      legend: { top: 0, textStyle: { color: muted, fontSize: 11 }, itemWidth: 14, itemHeight: 8 },
+      grid: { left: 56, right: 60, top: 36, bottom: 46 },
+      xAxis: { type: 'category', data: labels, axisLabel: { color: muted, fontSize: 10 }, axisLine: axisLineStyle, axisTick: { show: false } },
       yAxis: [
-        { type: 'value', name: '当年投运 (GW)', nameTextStyle: { color: muted }, axisLabel: { color: muted }, splitLine: { lineStyle: { color: rule } } },
-        { type: 'value', name: '累计 (GW)', nameTextStyle: { color: muted }, axisLabel: { color: muted }, splitLine: { show: false } }
+        { type: 'value', name: '当年投运 (GW)', nameTextStyle: { color: faint, fontSize: 10 }, axisLabel: axisLabelStyle, splitLine: splitLineStyle },
+        { type: 'value', name: '累计 (GW)', nameTextStyle: { color: faint, fontSize: 10 }, axisLabel: axisLabelStyle, splitLine: { show: false } }
       ],
       series: [
-        { name: '当年投运', type: 'bar', data: yearly, barWidth: '55%',
-          itemStyle: { color: accent2, borderRadius: [3, 3, 0, 0] } },
-        { name: '累计投运', type: 'line', yAxisIndex: 1, data: cum, symbol: 'none',
-          lineStyle: { color: accent, width: 2.5 } }
+        { name: '当年投运', type: 'bar', data: yearly, barWidth: '58%',
+          itemStyle: { color: '#8fc7bf', borderRadius: [3, 3, 0, 0] },
+          emphasis: { itemStyle: { color: accent } } },
+        { name: '累计投运', type: 'line', yAxisIndex: 1, data: cum, symbol: 'none', smooth: 0.15,
+          lineStyle: { color: amber, width: 2.5 },
+          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: 'rgba(196,122,18,.12)' }, { offset: 1, color: 'rgba(196,122,18,0)' }] } } }
       ]
     }, { notMerge: true });
   }
@@ -265,10 +283,10 @@
     var start = (page - 1) * PAGE_SIZE;
     var rows = filtered.slice(start, start + PAGE_SIZE);
     var html = rows.map(function(r) {
-      var stColor = STATUS_COLOR[r[4]] || muted;
+      var stColor = STATUS_COLOR[r[4]] || faint;
       return '<tr><td title="' + esc(r[0]) + '">' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td>' +
         '<td>' + esc(cnCountry(r[2])) + '</td><td>' + r[3] + '</td>' +
-        '<td><span class="badge" style="background:' + stColor + '22;color:' + stColor + '">' + r[4] + '</span></td>' +
+        '<td><span class="badge" style="background:' + stColor + '1f;color:' + stColor + '">' + r[4] + '</span></td>' +
         '<td>' + r[5] + '</td><td class="cap">' + r[6].toLocaleString() + '</td>' +
         '<td class="cap">' + (r[9] || '') + '</td><td title="' + esc(r[10]) + '">' + esc(r[10]) + '</td>' +
         (r[11] ? '<td><a class="b-wiki" href="' + r[11] + '" target="_blank" rel="noopener">链接</a></td>' : '<td></td>') +
