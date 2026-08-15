@@ -716,3 +716,78 @@ tr.detail-row td { padding: 0; border-bottom: 1px solid var(--rule); background:
   .db-search { order: 5; max-width: none; flex-basis: 100%; }
   .db-table td:first-child, .db-table th:first-child { max-width: 190px; }
 }
+
+/* ===== 地图页 v2 ===== */
+.map-tb {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 0.7rem 0.95rem; margin-bottom: 0.65rem;
+}
+.map-tb .map-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.93rem; white-space: nowrap; }
+.map-tb .map-title svg { width: 17px; height: 17px; color: var(--accent); flex: none; }
+.map-tb .map-select {
+  background: var(--bg); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 9px; padding: 0.42rem 0.6rem; font-size: 0.81rem; outline: none; cursor: pointer;
+}
+.map-tb .map-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
+.map-search { position: relative; min-width: 170px; }
+.map-search input {
+  width: 100%; padding: 0.42rem 0.7rem 0.42rem 1.9rem; border: 1px solid var(--rule);
+  border-radius: 9px; background: var(--bg); font-size: 0.82rem; color: var(--ink); outline: none;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.map-search input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+.map-search .ic { position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; display: flex; }
+.map-sug {
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 50; background: #fff;
+  border: 1px solid var(--rule); border-radius: 10px; box-shadow: var(--shadow-lg);
+  overflow: hidden; display: none;
+}
+.map-sug.show { display: block; }
+.map-sug .sg-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.42rem 0.7rem; font-size: 0.82rem; cursor: pointer; }
+.map-sug .sg-item:hover, .map-sug .sg-item.sel { background: var(--accent-soft); }
+.map-sug .sg-item .sg-n { color: var(--faint); font-size: 0.72rem; font-family: 'GeistMono', monospace; }
+.map-kpis {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-bottom: 0.65rem;
+}
+.mkpi {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 13px;
+  box-shadow: var(--shadow); padding: 0.68rem 0.95rem; display: flex; align-items: baseline; gap: 0.6rem;
+}
+.mkpi .ml { font-size: 0.72rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.mkpi .mv { font-family: 'GeistMono', monospace; font-size: 1.12rem; font-weight: 700; letter-spacing: -0.01em; }
+.mkpi .mu { font-size: 0.7rem; color: var(--faint); }
+.map-ctl {
+  position: absolute; top: 12px; right: 12px; z-index: 20; display: flex; flex-direction: column; gap: 0.35rem;
+}
+.map-ctl button {
+  width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--rule);
+  background: rgba(255,255,255,.94); color: var(--muted); cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow);
+  transition: color .15s, border-color .15s;
+}
+.map-ctl button:hover { color: var(--accent-ink); border-color: var(--accent); }
+.map-ctl button svg { width: 15px; height: 15px; }
+#chart-map { width: 100%; height: calc(100vh - 252px); min-height: 560px; }
+.map-panel:fullscreen { border-radius: 0; border: none; }
+.map-panel:fullscreen #chart-map { height: 100vh; min-height: 0; }
+.seg { display: inline-flex; background: var(--bg); border: 1px solid var(--rule); border-radius: 9px; padding: 2px; gap: 2px; margin-bottom: 0.65rem; }
+.seg button {
+  border: none; background: transparent; border-radius: 7px; padding: 0.3rem 0.6rem;
+  font-size: 0.75rem; color: var(--muted); cursor: pointer; font-weight: 550; white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+.seg button.on { background: var(--card); color: var(--accent-ink); box-shadow: var(--shadow); font-weight: 650; }
+.rank-row .rank-bar { width: 64px; }
+.rank-row .rank-pct { font-size: 0.68rem; color: var(--faint); font-family: 'GeistMono', monospace; width: 2.6rem; text-align: right; flex: none; }
+.rank-row.on-cty { background: var(--accent-soft); border-radius: 8px; padding-left: 0.35rem; padding-right: 0.35rem; }
+.rank-empty { font-size: 0.8rem; color: var(--faint); padding: 0.8rem 0; }
+.map-note { font-size: 0.7rem; color: var(--faint); margin-top: 0.7rem; line-height: 1.5; }
+
+@media (max-width: 1100px) {
+  .map-kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  #chart-map { height: 58vh; min-height: 420px; }
+  .map-search { order: 9; flex-basis: 100%; }
+}
