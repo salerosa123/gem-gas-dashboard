@@ -439,7 +439,7 @@
     var k = +th.getAttribute('data-k');
     if (st.sort === k) { st.sortDir = st.sortDir === 1 ? -1 : (st.sortDir === -1 ? 0 : 1); if (!st.sortDir) st.sort = null; }
     else { st.sort = k; st.sortDir = NUMCOLS.indexOf(k) >= 0 ? -1 : 1; }
-    renderHead(); renderRows(); syncUrl();
+    refresh();
   });
 
   var debSearch = S.debounce(function() { st.q = document.getElementById('db-q').value; st.page = 1; refresh(); }, 250);
