@@ -102,7 +102,7 @@
   var FEISHU_BASE = 'https://hf03zlwk29.feishu.cn/base/IfkrbPAGbaYeBXsMPpXcJDmRnDX';
   var GEM_PAGE = 'https://globalenergymonitor.org/projects/global-oil-gas-plant-tracker';
   var NAV_ITEMS = [
-    ['index.html', '首页'], ['map.html', '全球地图'], ['analysis.html', '数据分析'],
+    ['index.html', '首页'], ['map.html', '全球地图'], ['analysis.html', '分析工具'],
     ['data.html', '数据库'], ['about.html', '关于']
   ];
   function currentPage() {
