@@ -180,7 +180,7 @@ figure.chart-figure .note { font-size: 0.76rem; color: var(--faint); margin-top:
 .filterbar .count { margin-left: auto; font-size: 0.8rem; color: var(--muted); font-family: 'GeistMono', monospace; white-space: nowrap; }
 .filterbar .count b { color: var(--accent); font-weight: 600; }
 
-/* ===== 胶囊筛选（地图页） ===== */
+/* ===== 胶囊筛选（通用） ===== */
 .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
 .chip {
   display: inline-flex; align-items: center; gap: 0.4rem;
@@ -193,34 +193,12 @@ figure.chart-figure .note { font-size: 0.76rem; color: var(--faint); margin-top:
 .chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .chip .n { font-family: 'GeistMono', monospace; font-size: 0.72rem; opacity: .75; }
 
-/* ===== 地图页布局 ===== */
-.map-toolbar {
-  display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; justify-content: space-between;
-  margin-bottom: 0.9rem;
-}
-.map-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.1rem; align-items: start; }
+/* ===== 地图页 ===== */
 .map-panel {
   background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
   box-shadow: var(--shadow); overflow: hidden; position: relative;
 }
-#chart-map { width: 100%; height: calc(100vh - 240px); min-height: 540px; }
-.side-panel {
-  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
-  box-shadow: var(--shadow); padding: 1rem 1.1rem; position: sticky; top: 66px;
-  max-height: calc(100vh - 90px); overflow-y: auto;
-}
-.side-panel h3 { font-size: 0.88rem; font-weight: 700; margin-bottom: 0.2rem; }
-.side-panel .sub { font-size: 0.74rem; color: var(--faint); margin-bottom: 0.7rem; }
-.rank-row {
-  display: flex; align-items: center; gap: 0.55rem; padding: 0.36rem 0;
-  border-top: 1px solid #f0eee8; font-size: 0.82rem; cursor: pointer;
-}
-.rank-row:hover .rank-name { color: var(--accent); }
-.rank-row .rank-i { font-family: 'GeistMono', monospace; font-size: 0.72rem; color: var(--faint); width: 1.4rem; flex: none; }
-.rank-row .rank-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s; }
-.rank-row .rank-val { font-family: 'GeistMono', monospace; font-size: 0.76rem; color: var(--muted); }
-.rank-row .rank-bar { height: 3px; border-radius: 2px; background: var(--accent-soft); position: relative; flex: none; width: 52px; }
-.rank-row .rank-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--accent); display: block; }
+#chart-map { width: 100%; height: calc(100vh - 205px); min-height: 560px; }
 .detail-card {
   position: absolute; left: 14px; bottom: 14px; z-index: 10; width: 320px; max-width: calc(100% - 28px);
   background: rgba(255,255,255,.97); border: 1px solid var(--rule); border-radius: 12px;
@@ -522,8 +500,6 @@ footer .credit { margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid #f
 @media (max-width: 1100px) {
   .insights, .entry-cards { grid-template-columns: 1fr; }
   .about-grid { grid-template-columns: 1fr; }
-  .map-layout { grid-template-columns: 1fr; }
-  .side-panel { position: static; max-height: none; }
 }
 @media (max-width: 1000px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
@@ -717,19 +693,23 @@ tr.detail-row td { padding: 0; border-bottom: 1px solid var(--rule); background:
   .db-table td:first-child, .db-table th:first-child { max-width: 190px; }
 }
 
-/* ===== 地图页 v2 ===== */
-.map-tb {
-  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+/* ===== 地图页 v3：搜索 + 多选下拉 + 全宽地图 ===== */
+.map-topbar {
   background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
-  box-shadow: var(--shadow); padding: 0.7rem 0.95rem; margin-bottom: 0.65rem;
+  box-shadow: var(--shadow); padding: 0.85rem 1rem; margin-bottom: 0.8rem;
 }
-.map-tb .map-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.93rem; white-space: nowrap; }
-.map-tb .map-title svg { width: 17px; height: 17px; color: var(--accent); flex: none; }
-.map-tb .map-select {
-  background: var(--bg); color: var(--ink); border: 1px solid var(--rule);
-  border-radius: 9px; padding: 0.42rem 0.6rem; font-size: 0.81rem; outline: none; cursor: pointer;
+.map-topbar .map-search { max-width: 460px; }
+.map-topbar .map-search input {
+  padding: 0.55rem 0.85rem 0.55rem 2.1rem; font-size: 0.88rem; border-radius: 10px;
 }
-.map-tb .map-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
+.map-drops { display: flex; align-items: center; gap: 0.55rem; margin-top: 0.65rem; flex-wrap: wrap; }
+.drop-spring { flex: 1; }
+.ms-reset {
+  background: transparent; color: var(--muted); border: 1px dashed var(--rule);
+  border-radius: 10px; padding: 0.42rem 0.9rem; font-size: 0.8rem; cursor: pointer;
+  transition: color .15s, border-color .15s;
+}
+.ms-reset:hover { color: var(--accent-ink); border-color: var(--accent); }
 .map-search { position: relative; min-width: 170px; }
 .map-search input {
   width: 100%; padding: 0.42rem 0.7rem 0.42rem 1.9rem; border: 1px solid var(--rule);
@@ -747,16 +727,6 @@ tr.detail-row td { padding: 0; border-bottom: 1px solid var(--rule); background:
 .map-sug .sg-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.42rem 0.7rem; font-size: 0.82rem; cursor: pointer; }
 .map-sug .sg-item:hover, .map-sug .sg-item.sel { background: var(--accent-soft); }
 .map-sug .sg-item .sg-n { color: var(--faint); font-size: 0.72rem; font-family: 'GeistMono', monospace; }
-.map-kpis {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.65rem; margin-bottom: 0.65rem;
-}
-.mkpi {
-  background: var(--card); border: 1px solid var(--rule); border-radius: 13px;
-  box-shadow: var(--shadow); padding: 0.68rem 0.95rem; display: flex; align-items: baseline; gap: 0.6rem;
-}
-.mkpi .ml { font-size: 0.72rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
-.mkpi .mv { font-family: 'GeistMono', monospace; font-size: 1.12rem; font-weight: 700; letter-spacing: -0.01em; }
-.mkpi .mu { font-size: 0.7rem; color: var(--faint); }
 .map-ctl {
   position: absolute; top: 12px; right: 12px; z-index: 20; display: flex; flex-direction: column; gap: 0.35rem;
 }
@@ -768,26 +738,55 @@ tr.detail-row td { padding: 0; border-bottom: 1px solid var(--rule); background:
 }
 .map-ctl button:hover { color: var(--accent-ink); border-color: var(--accent); }
 .map-ctl button svg { width: 15px; height: 15px; }
-#chart-map { width: 100%; height: calc(100vh - 252px); min-height: 560px; }
+.map-badge {
+  position: absolute; right: 14px; bottom: 12px; z-index: 12; pointer-events: none;
+  background: rgba(255,255,255,.92); border: 1px solid var(--rule); border-radius: 999px;
+  padding: 0.26rem 0.8rem; font-size: 0.72rem; color: var(--muted);
+  font-family: 'GeistMono', monospace; box-shadow: var(--shadow); white-space: nowrap;
+}
 .map-panel:fullscreen { border-radius: 0; border: none; }
 .map-panel:fullscreen #chart-map { height: 100vh; min-height: 0; }
-.seg { display: inline-flex; background: var(--bg); border: 1px solid var(--rule); border-radius: 9px; padding: 2px; gap: 2px; margin-bottom: 0.65rem; }
-.seg button {
-  border: none; background: transparent; border-radius: 7px; padding: 0.3rem 0.6rem;
-  font-size: 0.75rem; color: var(--muted); cursor: pointer; font-weight: 550; white-space: nowrap;
-  transition: background .12s, color .12s;
-}
-.seg button.on { background: var(--card); color: var(--accent-ink); box-shadow: var(--shadow); font-weight: 650; }
-.rank-row .rank-bar { width: 64px; }
-.rank-row .rank-pct { font-size: 0.68rem; color: var(--faint); font-family: 'GeistMono', monospace; width: 2.6rem; text-align: right; flex: none; }
-.rank-row.on-cty { background: var(--accent-soft); border-radius: 8px; padding-left: 0.35rem; padding-right: 0.35rem; }
-.rank-empty { font-size: 0.8rem; color: var(--faint); padding: 0.8rem 0; }
-.map-note { font-size: 0.7rem; color: var(--faint); margin-top: 0.7rem; line-height: 1.5; }
 
-@media (max-width: 1100px) {
-  .map-kpis { grid-template-columns: repeat(2, 1fr); }
+/* --- 多选下拉 --- */
+.msel { position: relative; }
+.msel-btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: var(--bg); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 0.44rem 0.75rem; font-size: 0.82rem; color: var(--ink); cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, background .15s; white-space: nowrap;
 }
+.msel-btn:hover { border-color: var(--accent); }
+.msel.open .msel-btn { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
+.msel-t { color: var(--muted); font-weight: 600; }
+.msel-sum { font-weight: 550; max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.msel.has-sel .msel-sum { color: var(--accent-ink); }
+.msel-chev { width: 12px; height: 12px; color: var(--faint); transition: transform .18s; flex: none; }
+.msel.open .msel-chev { transform: rotate(180deg); }
+.msel-panel {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 55; min-width: 236px;
+  background: #fff; border: 1px solid var(--rule); border-radius: 11px;
+  box-shadow: var(--shadow-lg); overflow: hidden; display: none;
+}
+.msel.open .msel-panel { display: block; }
+.ms-list { max-height: 300px; overflow-y: auto; padding: 0.3rem; }
+.ms-item {
+  display: flex; align-items: center; gap: 0.5rem; padding: 0.42rem 0.6rem;
+  border-radius: 8px; font-size: 0.82rem; cursor: pointer; user-select: none;
+}
+.ms-item:hover { background: var(--bg); }
+.ms-item.on { background: var(--accent-soft); }
+.ms-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dot, transparent); border: 1px solid rgba(27,36,48,.15); flex: none; }
+.ms-name { flex: 1; }
+.ms-item.on .ms-name { color: var(--accent-ink); font-weight: 600; }
+.ms-n { font-family: 'GeistMono', monospace; font-size: 0.7rem; color: var(--faint); }
+.ms-ck { width: 14px; height: 14px; color: var(--accent-ink); opacity: 0; flex: none; display: flex; }
+.ms-ck svg { width: 100%; height: 100%; }
+.ms-item.on .ms-ck { opacity: 1; }
+.ms-foot { display: flex; align-items: center; padding: 0.4rem 0.65rem; border-top: 1px solid #f0eee8; gap: 0.4rem; }
+.ms-foot button { border: none; background: none; font-size: 0.76rem; color: var(--muted); cursor: pointer; padding: 0.15rem 0.35rem; border-radius: 6px; }
+.ms-foot button:hover { color: var(--accent-ink); background: var(--accent-soft); }
+
 @media (max-width: 900px) {
   #chart-map { height: 58vh; min-height: 420px; }
-  .map-search { order: 9; flex-basis: 100%; }
+  .map-topbar .map-search { max-width: none; }
 }
