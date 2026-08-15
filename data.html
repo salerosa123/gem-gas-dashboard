@@ -5,204 +5,496 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>数据库 · GOGPT 数据观察站</title>
-<meta name="description" content="全球油气电厂完整数据库：13,895 条机组记录，支持搜索、筛选、排序、分页与 CSV 导出。">
-<link rel="stylesheet" href="assets/layout.css">
+<meta name="description" content="全球油气电厂机组数据库：13,895 条记录，支持全列排序、多选筛选、列定制、行详情与 CSV 导出。">
+<link rel="stylesheet" href="assets/layout.css?v=2">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" style="padding-top:1.2rem">
 
-<div class="page-head">
-  <div class="overline">数据库</div>
-  <h1>13,895 条机组记录，全量可查</h1>
-  <div class="sub">与飞书多维表格数据库同源。点击表头可排序；筛选结果可一键导出 CSV；协作编辑请使用<a href="https://hf03zlwk29.feishu.cn/base/IfkrbPAGbaYeBXsMPpXcJDmRnDX" target="_blank" rel="noopener">飞书数据库</a>。</div>
-</div>
-
-<div class="filterbar">
-  <span class="f-label">筛选</span>
-  <select id="f-region"><option value="">全部大区</option></select>
-  <select id="f-status"><option value="">全部状态</option></select>
-  <select id="f-fuel"><option value="">全部燃料</option></select>
-  <input type="text" id="f-country" placeholder="国家/地区（中/英文）…">
-  <input type="text" id="f-keyword" placeholder="电厂/业主关键词…">
-  <button class="reset" id="f-reset">重置</button>
-  <span class="count" id="f-count"></span>
-</div>
-
-<figure class="table-figure">
-  <div class="table-tools">
-    <span style="font-size:0.92rem;font-weight:650">机组明细</span>
-    <span class="spacer"></span>
-    <button class="btn" id="btn-export">导出当前筛选为 CSV</button>
+<div class="db-toolbar">
+  <div class="db-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+    机组数据库 <span class="cnt" id="db-total"></span>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>电厂名称</th><th>机组</th><th>国家/地区</th><th>大区</th><th>状态</th>
-          <th>燃料大类</th>
-          <th class="cap sortable" data-col="6">容量 (MW)<span class="arrow"></span></th>
-          <th class="cap sortable" data-col="9">投运年份<span class="arrow"></span></th>
-          <th>业主</th><th>Wiki</th>
-        </tr>
-      </thead>
+  <div class="db-search">
+    <span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+    <input type="text" id="db-q" placeholder="搜索电厂 / 机组 / 业主 / 国家（中英文）…">
+    <kbd>/</kbd>
+  </div>
+  <button class="tbtn" id="btn-cols" title="显示 / 隐藏列、调整顺序">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/></svg>列
+  </button>
+  <button class="tbtn" id="btn-dict" title="字段说明">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>字段字典
+  </button>
+  <button class="tbtn primary" id="btn-export">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>导出 CSV
+  </button>
+</div>
+
+<div class="db-chips" id="db-chips"></div>
+
+<div class="db-shell">
+  <div class="db-scroll" id="db-scroll">
+    <table class="db-table">
+      <thead><tr id="thead"></tr></thead>
       <tbody id="tbody"></tbody>
     </table>
   </div>
-  <div class="pager">
-    <button id="pg-prev">上一页</button>
-    <button id="pg-next">下一页</button>
-    <span class="pageinfo" id="pg-info"></span>
-  </div>
-</figure>
+  <div class="db-pager" id="db-pager"></div>
+</div>
 
-<details class="dict">
-  <summary>字段字典（21 个原始字段说明）</summary>
-  <div class="dict-body">
-    <table class="mini-table">
-      <thead><tr><th>字段</th><th>说明</th></tr></thead>
-      <tbody>
-        <tr><td>电厂名称 / 机组名称</td><td>GEM 登记的电厂与机组名称（英文）</td></tr>
-        <tr><td>国家/地区 · 大区 · 省/州 · 城市</td><td>电厂所在地理位置；大区分为亚洲/美洲/欧洲/非洲/大洋洲</td></tr>
-        <tr><td>状态</td><td>在运 / 在建 / 前期开发 / 已宣布 / 搁置 / 取消 / 封存 / 退役（译自 GEM 8 级状态）</td></tr>
-        <tr><td>燃料大类</td><td>由 GEM 燃料明细派生：天然气 / 油气混合 / 燃油 / 工业副产气 / 掺氢/其他</td></tr>
-        <tr><td>容量MW</td><td>机组额定装机容量，单位兆瓦</td></tr>
-        <tr><td>投运年份 / 退役年份</td><td>机组投运与退役年份；部分老机组年份缺失</td></tr>
-        <tr><td>技术类型</td><td>燃机技术（如联合循环 GTCC、简单循环等）</td></tr>
-        <tr><td>业主 / 运营商 / 母公司</td><td>项目股权与运营主体</td></tr>
-        <tr><td>纬度 / 经度</td><td>WGS84 坐标；地图页据此上图</td></tr>
-        <tr><td>GEM Wiki链接</td><td>每条机组在 GEM Wiki 的详情页</td></tr>
-      </tbody>
-    </table>
-  </div>
-</details>
+<div class="drawer-mask" id="dict-mask"></div>
+<aside class="dict-drawer" id="dict-drawer">
+  <button class="dd-close" id="dict-close">✕</button>
+  <h3>字段字典</h3>
+  <div class="dd-sub">GOGPT 原始数据集共 21 个字段，本站展示其中 12 个核心字段，其余字段可在飞书数据库中查看。</div>
+  <div id="dict-body"></div>
+</aside>
 
 </div>
 <script src="assets/data.js"></script>
-<script src="assets/site.js"></script>
+<script src="assets/site.js?v=2"></script>
 <script>
 (function() {
+  'use strict';
   var S = window.SITE, RAW = window.GOGPT_DATA;
-  var params = S.getParams();
-  var state = {
-    region: params.region, fuel: params.fuel,
-    status: params.status.length === 1 ? params.status[0] : '',
-    country: params.country, kw: params.kw
-  };
-  var filtered = RAW.slice();
-  var page = 1, PAGE_SIZE = 50;
-  var sortCol = null, sortDir = 0; // 1 asc, -1 desc
 
-  function fillSelect(id, values) {
-    var sel = document.getElementById(id);
-    values.forEach(function(v) {
-      var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
-    });
-  }
+  /* ===== 列定义（k = 数据下标） ===== */
+  var COLS = {
+    0:  { name: '电厂名称' },
+    1:  { name: '机组名称' },
+    2:  { name: '国家/地区', fmt: function(r) { return S.cnCountry(r[2]); } },
+    3:  { name: '大区' },
+    4:  { name: '状态', badge: true },
+    5:  { name: '燃料大类' },
+    6:  { name: '容量 (MW)', num: true, bar: true },
+    7:  { name: '纬度', num: true, hide: true },
+    8:  { name: '经度', num: true, hide: true },
+    9:  { name: '投运年份', num: true },
+    10: { name: '业主' },
+    11: { name: 'GEM Wiki', link: true }
+  };
+  var ORDER = [0, 1, 2, 3, 4, 5, 6, 9, 10, 11, 7, 8];
+  var NUMCOLS = [6, 9, 7, 8];
+
+  /* ===== 筛选维度 ===== */
   var regions = [], fuels = [];
   RAW.forEach(function(r) {
     if (regions.indexOf(r[3]) < 0) regions.push(r[3]);
     if (fuels.indexOf(r[5]) < 0) fuels.push(r[5]);
   });
-  fillSelect('f-region', regions.sort());
-  fillSelect('f-status', S.STATUS_ORDER);
-  fillSelect('f-fuel', S.FUEL_ORDER.filter(function(f) { return fuels.indexOf(f) >= 0; }));
-  if (state.region) document.getElementById('f-region').value = state.region;
-  if (state.status) document.getElementById('f-status').value = state.status;
-  if (state.fuel) document.getElementById('f-fuel').value = state.fuel;
-  if (state.country) document.getElementById('f-country').value = state.country;
-  if (state.kw) document.getElementById('f-keyword').value = state.kw;
+  regions.sort();
+  var FDIMS = {
+    region: { name: '大区', opts: regions, color: function(v) { return '#0e7c6f'; } },
+    status: { name: '状态', opts: S.STATUS_ORDER, color: function(v) { return S.STATUS_COLOR[v] || '#9aa3b2'; } },
+    fuel:   { name: '燃料', opts: S.FUEL_ORDER.filter(function(f) { return fuels.indexOf(f) >= 0; }), color: function() { return '#c47a12'; } }
+  };
 
-  function applySort() {
-    if (!sortCol || !sortDir) return;
-    filtered.sort(function(a, b) {
-      var va = a[sortCol], vb = b[sortCol];
-      if (va === vb) return 0;
-      if (va == null || va === '') return 1;
-      if (vb == null || vb === '') return -1;
-      return (va < vb ? -1 : 1) * sortDir;
-    });
+  /* ===== 状态 ===== */
+  var qs = new URLSearchParams(location.search);
+  var st = {
+    q: qs.get('q') || qs.get('kw') || qs.get('country') || '',
+    filters: {
+      region: qs.get('region') ? qs.get('region').split(',') : [],
+      status: qs.get('status') ? qs.get('status').split(',') : [],
+      fuel: qs.get('fuel') ? qs.get('fuel').split(',') : []
+    },
+    sort: null, sortDir: 0,
+    page: Math.max(1, +qs.get('page') || 1),
+    size: +qs.get('size') || 50,
+    expanded: null
+  };
+  var sp = qs.get('sort');
+  if (sp && /^(\d+):(-?1)$/.test(sp)) { st.sort = +sp.split(':')[0]; st.sortDir = +sp.split(':')[1]; }
+  var filtered = RAW.slice();
+
+  document.getElementById('db-total').textContent = RAW.length.toLocaleString() + ' 条';
+  document.getElementById('db-q').value = st.q;
+
+  /* ===== URL 同步 ===== */
+  function syncUrl() {
+    var q = new URLSearchParams();
+    if (st.q) q.set('q', st.q);
+    ['region', 'status', 'fuel'].forEach(function(d) { if (st.filters[d].length) q.set(d, st.filters[d].join(',')); });
+    if (st.sort && st.sortDir) q.set('sort', st.sort + ':' + st.sortDir);
+    if (st.page > 1) q.set('page', st.page);
+    if (st.size !== 50) q.set('size', st.size);
+    var s = q.toString();
+    history.replaceState(null, '', s ? '?' + s : location.pathname);
   }
 
-  function renderTable() {
-    var total = filtered.length;
-    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    if (page > pages) page = pages;
-    var start = (page - 1) * PAGE_SIZE;
-    var rows = filtered.slice(start, start + PAGE_SIZE);
-    document.getElementById('tbody').innerHTML = rows.map(function(r) {
-      var stColor = S.STATUS_COLOR[r[4]] || '#9aa3b2';
-      return '<tr><td title="' + S.esc(r[0]) + '">' + S.esc(r[0]) + '</td><td>' + S.esc(r[1]) + '</td>' +
-        '<td>' + S.esc(S.cnCountry(r[2])) + '</td><td>' + r[3] + '</td>' +
-        '<td><span class="badge" style="background:' + stColor + '1f;color:' + stColor + '">' + r[4] + '</span></td>' +
-        '<td>' + r[5] + '</td><td class="cap">' + r[6].toLocaleString() + '</td>' +
-        '<td class="cap">' + (r[9] || '') + '</td><td title="' + S.esc(r[10]) + '">' + S.esc(r[10]) + '</td>' +
-        (r[11] ? '<td><a class="b-wiki" href="' + r[11] + '" target="_blank" rel="noopener">链接</a></td>' : '<td></td>') +
-        '</tr>';
+  /* ===== 筛选 + 排序 ===== */
+  function applyAll() {
+    var qq = st.q.trim().toLowerCase();
+    filtered = RAW.filter(function(r) {
+      if (st.filters.region.length && st.filters.region.indexOf(r[3]) < 0) return false;
+      if (st.filters.status.length && st.filters.status.indexOf(r[4]) < 0) return false;
+      if (st.filters.fuel.length && st.filters.fuel.indexOf(r[5]) < 0) return false;
+      if (qq) {
+        var hay = (r[0] + ' ' + r[1] + ' ' + r[10] + ' ' + r[2] + ' ' + S.cnCountry(r[2])).toLowerCase();
+        if (hay.indexOf(qq) < 0) return false;
+      }
+      return true;
+    });
+    if (st.sort != null && st.sortDir) {
+      var c = st.sort, isNum = NUMCOLS.indexOf(c) >= 0;
+      filtered.sort(function(a, b) {
+        var va = a[c], vb = b[c];
+        if (va === vb) return 0;
+        if (va == null || va === '') return 1;
+        if (vb == null || vb === '') return -1;
+        if (isNum) return (va - vb) * st.sortDir;
+        return String(va) < String(vb) ? -st.sortDir : st.sortDir;
+      });
+    }
+  }
+
+  /* ===== 表格渲染 ===== */
+  function visibleCols() { return ORDER.filter(function(k) { return !COLS[k].hide; }); }
+
+  function renderHead() {
+    document.getElementById('thead').innerHTML = visibleCols().map(function(k) {
+      var c = COLS[k];
+      var arr = st.sort === k && st.sortDir ? '<span class="arr">' + (st.sortDir === 1 ? '▲' : '▼') + '</span>' : '';
+      return '<th data-k="' + k + '"' + (c.num ? ' class="num"' : '') + ' title="' + S.esc(c.name) + '">' + S.esc(c.name) + arr + '</th>';
     }).join('');
-    document.getElementById('pg-info').textContent = '第 ' + page + ' / ' + pages + ' 页 · 共 ' + total.toLocaleString() + ' 条';
-    document.getElementById('pg-prev').disabled = page <= 1;
-    document.getElementById('pg-next').disabled = page >= pages;
-    document.getElementById('f-count').innerHTML = '当前筛选 <b>' + total.toLocaleString() + '</b> 条';
   }
 
-  function applyFilter() {
-    filtered = S.filterRows(RAW, {
-      region: state.region, fuel: state.fuel,
-      status: state.status ? [state.status] : [],
-      country: state.country, kw: state.kw
-    });
-    applySort();
-    page = 1;
-    renderTable();
+  function rowHtml(r, maxCap) {
+    var rid = r[0] + '|' + r[1];
+    var tds = visibleCols().map(function(k) {
+      var c = COLS[k], v = r[k];
+      if (c.badge) {
+        var sc = S.STATUS_COLOR[v] || '#9aa3b2';
+        return '<td><span class="badge" style="background:' + sc + '1f;color:' + sc + '">' + v + '</span></td>';
+      }
+      if (c.bar) {
+        var p = maxCap ? Math.max(2, Math.round(v / maxCap * 100)) : 0;
+        return '<td class="num"><span class="minibar" style="--p:' + p + '%">' + v.toLocaleString() + '</span></td>';
+      }
+      if (c.link) return '<td>' + (v ? '<a class="b-wiki" href="' + v + '" target="_blank" rel="noopener">详情 ↗</a>' : '') + '</td>';
+      if (c.fmt) return '<td>' + S.esc(c.fmt(r)) + '</td>';
+      var txt = v == null ? '' : String(v);
+      return '<td' + (c.num ? ' class="num"' : '') + ' title="' + S.esc(txt) + '">' + S.esc(txt) + '</td>';
+    }).join('');
+    var on = st.expanded === rid ? ' on' : '';
+    var html = '<tr class="rrow' + on + '" data-id="' + S.esc(rid) + '">' + tds + '</tr>';
+    if (st.expanded === rid) html += detailHtml(r);
+    return html;
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('th.sortable'), function(th) {
-    th.addEventListener('click', function() {
-      var col = +th.getAttribute('data-col');
-      if (sortCol === col) { sortDir = sortDir === 1 ? -1 : (sortDir === -1 ? 0 : 1); }
-      else { sortCol = col; sortDir = -1; }
-      if (!sortDir) sortCol = null;
-      document.querySelectorAll('th.sortable .arrow').forEach(function(a) { a.textContent = ''; });
-      if (sortDir) th.querySelector('.arrow').textContent = sortDir === 1 ? '▲' : '▼';
-      applyFilter();
+  function detailHtml(r) {
+    var e = S.esc;
+    var FIELDS = [
+      ['电厂名称', e(r[0])], ['机组名称', e(r[1])], ['国家/地区', e(S.cnCountry(r[2]))], ['大区', e(r[3])],
+      ['状态', null], ['燃料大类', e(r[5])], ['容量 (MW)', r[6] ? r[6].toLocaleString() : ''],
+      ['投运年份', r[9] || ''], ['业主', e(r[10])],
+      ['纬度', r[7] != null ? (+r[7]).toFixed(4) : ''], ['经度', r[8] != null ? (+r[8]).toFixed(4) : ''],
+      ['GEM Wiki', r[11] ? '<a href="' + e(r[11]) + '" target="_blank" rel="noopener">在 GEM Wiki 查看机组档案 ↗</a>' : '']
+    ];
+    var sc = S.STATUS_COLOR[r[4]] || '#9aa3b2';
+    var cells = FIELDS.map(function(f) {
+      var v = f[0] === '状态' ? '<span class="badge" style="background:' + sc + '1f;color:' + sc + '">' + e(r[4]) + '</span>' : f[1];
+      return '<div class="d-item"><div class="dl">' + f[0] + '</div><div class="dv">' + v + '</div></div>';
+    }).join('');
+    return '<tr class="detail-row"><td colspan="99"><div class="detail-head"><span class="dh-name">' + e(r[0]) + ' · ' + e(r[1]) + '</span></div><div class="detail-grid">' + cells + '</div></td></tr>';
+  }
+
+  function renderRows() {
+    var total = filtered.length;
+    var pages = Math.max(1, Math.ceil(total / st.size));
+    if (st.page > pages) st.page = pages;
+    var start = (st.page - 1) * st.size;
+    var rows = filtered.slice(start, start + st.size);
+    var maxCap = 0;
+    rows.forEach(function(r) { if (r[6] > maxCap) maxCap = r[6]; });
+    var tb = document.getElementById('tbody');
+    if (!total) {
+      tb.innerHTML = '<tr><td colspan="99"><div class="db-empty"><div class="big">🔍</div>没有符合条件的记录<br>试试放宽筛选条件，或<button class="btn" id="empty-reset" style="margin-left:0.4rem">清除全部筛选</button></div></td></tr>';
+      var er = document.getElementById('empty-reset');
+      if (er) er.addEventListener('click', clearAll);
+    } else {
+      tb.innerHTML = rows.map(function(r) { return rowHtml(r, maxCap); }).join('');
+    }
+    Array.prototype.forEach.call(tb.querySelectorAll('tr.rrow'), function(tr) {
+      tr.addEventListener('click', function(e) {
+        if (e.target.closest('a')) return;
+        var id = tr.getAttribute('data-id');
+        st.expanded = st.expanded === id ? null : id;
+        renderRows();
+      });
     });
+  }
+
+  /* ===== 分页器 ===== */
+  function pageList(cur, pages) {
+    var set = [1, pages, cur - 1, cur, cur + 1];
+    var arr = [];
+    set.forEach(function(p) { if (p >= 1 && p <= pages && arr.indexOf(p) < 0) arr.push(p); });
+    arr.sort(function(a, b) { return a - b; });
+    var out = [];
+    for (var i = 0; i < arr.length; i++) {
+      if (i && arr[i] - arr[i - 1] > 1) out.push('…');
+      out.push(arr[i]);
+    }
+    return out;
+  }
+
+  function renderPager() {
+    var total = filtered.length;
+    var pages = Math.max(1, Math.ceil(total / st.size));
+    var from = total ? (st.page - 1) * st.size + 1 : 0;
+    var to = Math.min(total, st.page * st.size);
+    var nums = pageList(st.page, pages).map(function(p) {
+      if (p === '…') return '<span class="pg-dots">…</span>';
+      return '<button class="pg-btn' + (p === st.page ? ' on' : '') + '" data-p="' + p + '">' + p + '</button>';
+    }).join('');
+    document.getElementById('db-pager').innerHTML =
+      '<span class="pg-info">第 <b>' + from.toLocaleString() + '–' + to.toLocaleString() + '</b> 条 / 共 <b>' + total.toLocaleString() + '</b> 条' +
+      (total !== RAW.length ? '（全库 ' + RAW.length.toLocaleString() + '）' : '') + '</span>' +
+      '<button class="pg-btn" data-p="1"' + (st.page <= 1 ? ' disabled' : '') + '>«</button>' +
+      '<button class="pg-btn" data-p="' + (st.page - 1) + '"' + (st.page <= 1 ? ' disabled' : '') + '>‹</button>' +
+      nums +
+      '<button class="pg-btn" data-p="' + (st.page + 1) + '"' + (st.page >= pages ? ' disabled' : '') + '>›</button>' +
+      '<button class="pg-btn" data-p="' + pages + '"' + (st.page >= pages ? ' disabled' : '') + '>»</button>' +
+      '<span class="jump">跳至 <input type="number" min="1" max="' + pages + '" id="pg-jump"> 页</span>' +
+      '<select id="pg-size">' + [25, 50, 100, 200].map(function(n) {
+        return '<option value="' + n + '"' + (n === st.size ? ' selected' : '') + '>每页 ' + n + ' 条</option>';
+      }).join('') + '</select>';
+    Array.prototype.forEach.call(document.querySelectorAll('#db-pager .pg-btn[data-p]'), function(b) {
+      b.addEventListener('click', function() {
+        var p = +b.getAttribute('data-p');
+        if (p >= 1 && p <= pages && p !== st.page) { st.page = p; refresh(); }
+      });
+    });
+    var jp = document.getElementById('pg-jump');
+    jp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        var p = Math.min(pages, Math.max(1, +jp.value || 1));
+        if (p !== st.page) { st.page = p; refresh(); }
+        jp.blur();
+      }
+    });
+    document.getElementById('pg-size').addEventListener('change', function() {
+      st.size = +this.value; st.page = 1; refresh();
+    });
+  }
+
+  /* ===== 筛选标签片 ===== */
+  function renderChips() {
+    var el = document.getElementById('db-chips');
+    var html = '';
+    Object.keys(FDIMS).forEach(function(d) {
+      var vals = st.filters[d];
+      if (!vals.length) return;
+      var def = FDIMS[d];
+      html += '<span class="fchip" data-dim="' + d + '">' +
+        '<span class="fd">' + def.name + '</span>' +
+        '<span class="fv fvc" data-act="edit">' + S.esc(vals.join('、')) + '</span>' +
+        '<span class="fx" data-act="del" title="移除">✕</span></span>';
+    });
+    if (html) html += '<button class="addchip" style="border-style:solid;border-color:var(--rule);background:var(--card);box-shadow:var(--shadow)" data-act="reset">重置</button>';
+    html += '<button class="addchip" id="add-filter">+ 筛选</button>';
+    if (!html) html = '<button class="addchip" id="add-filter">+ 筛选</button>';
+    el.innerHTML = html;
+    Array.prototype.forEach.call(el.querySelectorAll('.fchip'), function(chip) {
+      chip.querySelector('[data-act=edit]').addEventListener('click', function(e) {
+        e.stopPropagation();
+        openValuePop(chip.getAttribute('data-dim'), this);
+      });
+      chip.querySelector('[data-act=del]').addEventListener('click', function(e) {
+        e.stopPropagation();
+        st.filters[chip.getAttribute('data-dim')] = [];
+        st.page = 1; refresh();
+      });
+    });
+    var rst = el.querySelector('[data-act=reset]');
+    if (rst) rst.addEventListener('click', clearAll);
+    document.getElementById('add-filter').addEventListener('click', function(e) {
+      e.stopPropagation();
+      openDimPop(this);
+    });
+  }
+
+  function clearAll() {
+    st.filters = { region: [], status: [], fuel: [] };
+    st.q = ''; document.getElementById('db-q').value = '';
+    st.page = 1; st.expanded = null; refresh();
+  }
+
+  /* ===== 弹出面板 ===== */
+  var popEl = null;
+  function closePop() { if (popEl) { popEl.remove(); popEl = null; } }
+  function showPop(anchor, html) {
+    closePop();
+    popEl = document.createElement('div');
+    popEl.className = 'pop';
+    popEl.innerHTML = html;
+    document.body.appendChild(popEl);
+    var r = anchor.getBoundingClientRect();
+    var w = popEl.offsetWidth, h = popEl.offsetHeight;
+    var x = Math.min(r.left, window.innerWidth - w - 12);
+    var y = r.bottom + 6;
+    if (y + h > window.innerHeight - 10) y = Math.max(10, r.top - h - 6);
+    popEl.style.left = Math.max(10, x) + 'px';
+    popEl.style.top = y + 'px';
+    popEl.addEventListener('click', function(e) { e.stopPropagation(); });
+  }
+
+  function openDimPop(anchor) {
+    var html = '<h5>添加筛选维度</h5>' + Object.keys(FDIMS).filter(function(d) { return !st.filters[d].length; }).map(function(d) {
+      return '<div class="pop-item" data-dim="' + d + '"><span class="sw" style="background:' + FDIMS[d].color('') + '"></span>' + FDIMS[d].name + '</div>';
+    }).join('');
+    if (html === '<h5>添加筛选维度</h5>') html += '<div class="pop-item" style="color:var(--muted)">所有维度均已添加</div>';
+    showPop(anchor, html);
+    Array.prototype.forEach.call(popEl.querySelectorAll('[data-dim]'), function(item) {
+      item.addEventListener('click', function() {
+        openValuePop(item.getAttribute('data-dim'), anchor);
+      });
+    });
+  }
+
+  function openValuePop(dim, anchor) {
+    var def = FDIMS[dim];
+    function build() {
+      return '<h5>选择' + def.name + '（可多选）</h5>' + def.opts.map(function(v) {
+        var ck = st.filters[dim].indexOf(v) >= 0 ? ' checked' : '';
+        return '<label class="pop-item" data-v="' + S.esc(v) + '"><input type="checkbox"' + ck + '><span class="sw" style="background:' + def.color(v) + '"></span>' + S.esc(v) + '</label>';
+      }).join('') +
+      '<div class="pop-foot"><button data-a="all">全选</button><button data-a="clear">清空</button><button data-a="done">完成</button></div>';
+    }
+    showPop(anchor, build());
+    function sync() { st.page = 1; refresh(); }
+    popEl.addEventListener('change', function(e) {
+      var lab = e.target.closest('.pop-item');
+      if (!lab) return;
+      var v = lab.getAttribute('data-v'), i = st.filters[dim].indexOf(v);
+      if (e.target.checked && i < 0) st.filters[dim].push(v);
+      if (!e.target.checked && i >= 0) st.filters[dim].splice(i, 1);
+      sync();
+    });
+    popEl.addEventListener('click', function(e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'all') { st.filters[dim] = def.opts.slice(); sync(); popEl.innerHTML = build(); }
+      if (a === 'clear') { st.filters[dim] = []; sync(); popEl.innerHTML = build(); }
+      if (a === 'done') { closePop(); }
+    });
+  }
+
+  function openColsPop(anchor) {
+    function build() {
+      return '<h5>列设置（勾选显示 · 箭头调序）</h5>' + ORDER.map(function(k, i) {
+        var c = COLS[k];
+        return '<div class="pop-item"><input type="checkbox" data-k="' + k + '"' + (c.hide ? '' : ' checked') + '><span>' + S.esc(c.name) + '</span>' +
+          '<span class="px"><button data-mv="-1" data-i="' + i + '"' + (i === 0 ? ' disabled' : '') + '>↑</button><button data-mv="1" data-i="' + i + '"' + (i === ORDER.length - 1 ? ' disabled' : '') + '>↓</button></span></div>';
+      }).join('');
+    }
+    showPop(anchor, build());
+    popEl.addEventListener('change', function(e) {
+      var k = e.target.getAttribute && e.target.getAttribute('data-k');
+      if (k != null) {
+        COLS[k].hide = !e.target.checked;
+        renderHead(); renderRows();
+      }
+    });
+    popEl.addEventListener('click', function(e) {
+      var mv = e.target.getAttribute && e.target.getAttribute('data-mv');
+      if (!mv) return;
+      var i = +e.target.getAttribute('data-i'), j = i + (+mv);
+      if (j < 0 || j >= ORDER.length) return;
+      var t = ORDER[i]; ORDER[i] = ORDER[j]; ORDER[j] = t;
+      popEl.innerHTML = build();
+      renderHead(); renderRows();
+    });
+  }
+
+  /* ===== 字段字典抽屉 ===== */
+  var DICT = [
+    ['电厂名称 / 机组名称', 'GEM 登记的电厂与机组名称（英文）'],
+    ['国家/地区 · 大区 · 省/州 · 城市', '电厂所在地理位置；大区分为亚洲/美洲/欧洲/非洲/大洋洲'],
+    ['状态', '在运 / 在建 / 前期开发 / 已宣布 / 搁置 / 取消 / 封存 / 退役（译自 GEM 8 级状态）'],
+    ['燃料大类', '由 GEM 燃料明细派生：天然气 / 油气混合 / 燃油 / 工业副产气 / 掺氢/其他'],
+    ['容量MW', '机组额定装机容量，单位兆瓦'],
+    ['投运年份 / 退役年份', '机组投运与退役年份；部分老机组年份缺失'],
+    ['技术类型', '燃机技术（如联合循环 GTCC、简单循环等）'],
+    ['业主 / 运营商 / 母公司', '项目股权与运营主体'],
+    ['纬度 / 经度', 'WGS84 坐标；地图页据此上图'],
+    ['GEM Wiki链接', '每条机组在 GEM Wiki 的详情页']
+  ];
+  document.getElementById('dict-body').innerHTML = DICT.map(function(d) {
+    return '<div class="dd-item"><b>' + d[0] + '</b><p>' + d[1] + '</p></div>';
+  }).join('');
+  var drawer = document.getElementById('dict-drawer'), dmask = document.getElementById('dict-mask');
+  document.getElementById('btn-dict').addEventListener('click', function() { drawer.classList.add('open'); dmask.classList.add('show'); });
+  function closeDrawer() { drawer.classList.remove('open'); dmask.classList.remove('show'); }
+  document.getElementById('dict-close').addEventListener('click', closeDrawer);
+  dmask.addEventListener('click', closeDrawer);
+
+  /* ===== 事件绑定 ===== */
+  document.getElementById('thead').addEventListener('click', function(e) {
+    var th = e.target.closest('th');
+    if (!th) return;
+    var k = +th.getAttribute('data-k');
+    if (st.sort === k) { st.sortDir = st.sortDir === 1 ? -1 : (st.sortDir === -1 ? 0 : 1); if (!st.sortDir) st.sort = null; }
+    else { st.sort = k; st.sortDir = NUMCOLS.indexOf(k) >= 0 ? -1 : 1; }
+    renderHead(); renderRows(); syncUrl();
+  });
+
+  var debSearch = S.debounce(function() { st.q = document.getElementById('db-q').value; st.page = 1; refresh(); }, 250);
+  document.getElementById('db-q').addEventListener('input', debSearch);
+
+  document.getElementById('btn-cols').addEventListener('click', function(e) {
+    e.stopPropagation();
+    var anchor = this;
+    if (popEl && popEl.dataset.kind === 'cols') return closePop();
+    openColsPop(anchor);
+    popEl.dataset.kind = 'cols';
   });
 
   document.getElementById('btn-export').addEventListener('click', function() {
     var header = ['电厂名称', '机组名称', '国家/地区', '大区', '状态', '燃料大类', '容量MW', '投运年份', '业主', 'GEM Wiki链接'];
-    var lines = [header.join(',')];
     function csvCell(v) {
       v = String(v == null ? '' : v);
       return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
     }
+    var lines = [header.join(',')];
     filtered.forEach(function(r) {
       lines.push([r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[9] || '', r[10], r[11] || ''].map(csvCell).join(','));
     });
-    var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'gogpt-' + window.SITE.VERSION + '-筛选导出.csv';
+    a.download = 'gogpt-' + S.VERSION + '-筛选导出.csv';
     a.click();
     URL.revokeObjectURL(a.href);
   });
 
-  var deb = S.debounce(applyFilter, 250);
-  document.getElementById('f-region').addEventListener('change', function() { state.region = this.value; applyFilter(); });
-  document.getElementById('f-status').addEventListener('change', function() { state.status = this.value; applyFilter(); });
-  document.getElementById('f-fuel').addEventListener('change', function() { state.fuel = this.value; applyFilter(); });
-  document.getElementById('f-country').addEventListener('input', function() { state.country = this.value; deb(); });
-  document.getElementById('f-keyword').addEventListener('input', function() { state.kw = this.value; deb(); });
-  document.getElementById('f-reset').addEventListener('click', function() {
-    state = { region: '', status: '', fuel: '', country: '', kw: '' };
-    ['f-region', 'f-status', 'f-fuel'].forEach(function(id) { document.getElementById(id).value = ''; });
-    document.getElementById('f-country').value = '';
-    document.getElementById('f-keyword').value = '';
-    applyFilter();
+  document.addEventListener('click', function(e) {
+    if (popEl && !popEl.contains(e.target)) {
+      var inChip = e.target.closest && e.target.closest('.fchip, #add-filter, #btn-cols');
+      if (!inChip) closePop();
+    }
   });
-  document.getElementById('pg-prev').addEventListener('click', function() { if (page > 1) { page--; renderTable(); } });
-  document.getElementById('pg-next').addEventListener('click', function() { page++; renderTable(); });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+      e.preventDefault();
+      document.getElementById('db-q').focus();
+    }
+    if (e.key === 'Escape') { closePop(); closeDrawer(); }
+  });
 
-  applyFilter();
+  /* ===== 刷新 ===== */
+  function refresh() {
+    applyAll();
+    renderChips();
+    renderHead();
+    renderRows();
+    renderPager();
+    syncUrl();
+  }
+  refresh();
 })();
 </script>
 </body>
