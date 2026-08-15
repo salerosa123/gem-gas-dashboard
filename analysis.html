@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>分析工具 · GOGPT 数据观察站</title>
-<meta name="description" content="全球油气电厂自由分析工具：自选维度、指标与图表类型，一键生成中文分析报告。">
+<meta name="description" content="全球油气电厂专业分析工作台：多卡片仪表板、维度下钻、数据透视表、热力图与树图，一键生成中文分析报告。">
 <link rel="stylesheet" href="assets/layout.css">
 </head>
 <body>
@@ -14,515 +14,1132 @@
 <div class="page-head">
   <div class="overline">分析工具</div>
   <h1>自由组合，挖出你想看的角度</h1>
-  <div class="sub">选择分析维度、指标和图表类型，基于 13,895 条机组记录自由分析；筛选条件实时生效，结果可一键生成中文分析报告。</div>
+  <div class="sub">左侧选择维度与指标生成分析卡片，画布可同屏放置多张卡片；点击图表元素可<b>下钻</b>、<b>查看明细</b>或<b>设为全局筛选</b>；切换到透视表模式可做任意两维度交叉分析。</div>
 </div>
 
-<div class="filterbar">
-  <span class="f-label">筛选</span>
-  <select id="f-region"><option value="">全部大区</option></select>
-  <select id="f-status"><option value="">全部状态</option></select>
-  <select id="f-fuel"><option value="">全部燃料</option></select>
-  <input type="text" id="f-country" placeholder="国家/地区（中/英文）…">
-  <input type="text" id="f-keyword" placeholder="电厂/业主关键词…">
-  <button class="reset" id="f-reset">重置</button>
-  <span class="count" id="f-count"></span>
+<div class="app-shell">
+
+  <!-- ============ 左侧配置栏 ============ -->
+  <aside class="side-config" id="side-config">
+    <div class="cfg-sec">
+      <h4>模板库 <span class="mini">一键载入</span></h4>
+      <div id="tmpl-list"></div>
+    </div>
+
+    <div class="cfg-sec">
+      <h4>全局筛选 <span class="mini" id="g-filter-hint"></span></h4>
+      <div class="cfg-field" style="margin-bottom:0.5rem">
+        <label>大区</label>
+        <select class="cfg-input" id="g-region"><option value="">全部</option></select>
+      </div>
+      <div style="margin-bottom:0.5rem">
+        <label style="font-size:0.68rem;color:var(--muted);font-weight:700;display:block;margin-bottom:0.25rem">状态（可多选）</label>
+        <div class="st-chips" id="g-status-chips"></div>
+      </div>
+      <div class="cfg-grid2" style="margin-bottom:0.5rem">
+        <div class="cfg-field"><label>燃料</label><select class="cfg-input" id="g-fuel"><option value="">全部</option></select></div>
+        <div class="cfg-field"><label>Top N</label><select class="cfg-input" id="g-topn"><option value="10">Top 10</option><option value="15" selected>Top 15</option><option value="20">Top 20</option><option value="50">Top 50</option><option value="0">全部</option></select></div>
+      </div>
+      <div class="cfg-field" style="margin-bottom:0.5rem">
+        <label>国家/地区（中/英文）</label>
+        <input class="cfg-input" id="g-country" placeholder="如：中国 / China">
+      </div>
+      <div class="cfg-field">
+        <label>电厂/业主关键词</label>
+        <input class="cfg-input" id="g-kw" placeholder="如：国家电网 / Exxon">
+      </div>
+      <button class="reset" id="g-reset" style="margin-top:0.55rem;width:100%">重置筛选</button>
+    </div>
+
+    <div class="cfg-sec">
+      <h4>新建分析卡片</h4>
+      <label style="font-size:0.68rem;color:var(--muted);font-weight:700;display:block;margin-bottom:0.25rem">维度</label>
+      <div class="chip-row" id="c-dim"></div>
+      <label style="font-size:0.68rem;color:var(--muted);font-weight:700;display:block;margin:0.6rem 0 0.25rem">指标</label>
+      <div class="chip-row" id="c-metric"></div>
+      <div class="cfg-grid2" style="margin-top:0.6rem">
+        <div class="cfg-field"><label>图表</label>
+          <select class="cfg-input" id="c-chart">
+            <option value="auto">自动适配</option>
+            <option value="bar_v">柱状图</option>
+            <option value="bar_h">条形图</option>
+            <option value="pie">饼图</option>
+            <option value="line">折线图</option>
+            <option value="stack">堆叠柱（需对比）</option>
+            <option value="heatmap">热力图（需对比）</option>
+            <option value="treemap">树图</option>
+            <option value="scatter">散点象限</option>
+          </select>
+        </div>
+        <div class="cfg-field"><label>对比维度</label>
+          <select class="cfg-input" id="c-dim2"><option value="">无</option></select>
+        </div>
+      </div>
+      <button class="btn primary btn-add" id="c-add">添加到画布 +</button>
+    </div>
+
+    <div class="cfg-sec">
+      <h4>我的分析 <span class="mini">本地保存</span></h4>
+      <div id="saved-list"></div>
+    </div>
+  </aside>
+
+  <!-- ============ 右侧画布 ============ -->
+  <main style="min-width:0">
+    <div class="canvas-toolbar">
+      <div class="mode-tabs">
+        <button id="tab-canvas" class="on">仪表板</button>
+        <button id="tab-pivot">透视表</button>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn" id="btn-save">保存画布</button>
+        <button class="btn" id="btn-share">分享链接</button>
+        <button class="btn" id="btn-clear">清空</button>
+        <button class="btn primary" id="btn-report">生成分析报告</button>
+      </div>
+    </div>
+
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <section id="mode-canvas">
+      <div class="cards-grid" id="cards-grid"></div>
+    </section>
+
+    <section id="mode-pivot" style="display:none">
+      <div class="pivot-panel">
+        <div class="pivot-ctl">
+          <div class="cfg-field"><label>行维度</label><select class="cfg-input" id="p-row"></select></div>
+          <div class="cfg-field"><label>列维度</label><select class="cfg-input" id="p-col"></select></div>
+          <div class="cfg-field"><label>指标</label>
+            <select class="cfg-input" id="p-metric">
+              <option value="cap">装机容量 (GW)</option>
+              <option value="units">机组数量 (台)</option>
+              <option value="plants">电厂数量 (座)</option>
+              <option value="avgunit">平均单机容量 (MW)</option>
+            </select>
+          </div>
+          <button class="btn" id="p-export">导出 CSV</button>
+        </div>
+        <div class="pivot-wrap" id="pivot-wrap"></div>
+        <div style="font-size:0.72rem;color:var(--faint);margin-top:0.5rem">点击任意单元格可查看对应的明细记录；颜色深浅表示数值大小。</div>
+      </div>
+    </section>
+
+    <div class="report-panel" id="report-panel">
+      <div class="rp-head">
+        <h3>分析报告</h3>
+        <div class="rp-actions">
+          <button class="btn" id="rp-copy">复制 Markdown</button>
+          <button class="btn" id="rp-md">下载 .md</button>
+          <button class="btn" id="rp-html">下载 .html</button>
+        </div>
+      </div>
+      <div class="report-body" id="report-body"></div>
+    </div>
+  </main>
 </div>
 
-<div class="wb-panel">
-  <div class="wb-controls">
-    <div class="wb-field">
-      <label>分析维度</label>
-      <select id="w-dim">
-        <option value="country">国家/地区</option>
-        <option value="region">大区</option>
-        <option value="status">运营状态</option>
-        <option value="fuel">燃料大类</option>
-        <option value="owner">业主</option>
-        <option value="year">投运年份</option>
-      </select>
+</div>
+
+<div class="ctx-menu" id="ctx-menu"></div>
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">明细记录</h3>
+      <button class="icon-btn danger" id="modal-close">×</button>
     </div>
-    <div class="wb-field">
-      <label>指标</label>
-      <select id="w-metric">
-        <option value="cap">装机容量 (GW)</option>
-        <option value="units">机组数量 (台)</option>
-        <option value="plants">电厂数量 (座)</option>
-      </select>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <span id="modal-info"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="modal-export">导出明细 CSV</button>
     </div>
-    <div class="wb-field">
-      <label>图表类型</label>
-      <select id="w-chart">
-        <option value="auto">自动适配</option>
-        <option value="bar_v">柱状图</option>
-        <option value="bar_h">条形图</option>
-        <option value="pie">饼图</option>
-        <option value="line">折线图</option>
-      </select>
-    </div>
-    <div class="wb-field">
-      <label>对比维度（堆叠）</label>
-      <select id="w-dim2">
-        <option value="">无</option>
-        <option value="status">运营状态</option>
-        <option value="region">大区</option>
-        <option value="fuel">燃料大类</option>
-      </select>
-    </div>
-    <div class="wb-field">
-      <label>显示数量</label>
-      <select id="w-topn">
-        <option value="10">Top 10</option>
-        <option value="15" selected>Top 15</option>
-        <option value="20">Top 20</option>
-        <option value="50">Top 50</option>
-        <option value="0">全部</option>
-      </select>
-    </div>
-    <button class="btn primary" id="btn-report">生成分析报告</button>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
-<div class="wb-chart-card">
-  <div class="wb-chart-title" id="wb-title"></div>
-  <div class="wb-chart-sub" id="wb-sub"></div>
-  <div id="wb-chart"></div>
-</div>
-
-<figure class="table-figure">
-  <figcaption>聚合结果</figcaption>
-  <div class="agg-wrap">
-    <table>
-      <thead><tr>
-        <th>#</th><th id="agg-dim-head">维度</th>
-        <th class="cap">装机容量 (GW)</th><th class="cap">机组数 (台)</th><th class="cap">电厂数 (座)</th><th class="cap">占比</th>
-      </tr></thead>
-      <tbody id="agg-body"></tbody>
-    </table>
-  </div>
-</figure>
-
-<div class="report-panel" id="report-panel">
-  <div class="rp-head">
-    <h3>分析报告</h3>
-    <div class="rp-actions">
-      <button class="btn" id="rp-copy">复制 Markdown</button>
-      <button class="btn" id="rp-md">下载 .md</button>
-      <button class="btn" id="rp-html">下载 .html</button>
-    </div>
-  </div>
-  <div class="report-body" id="report-body"></div>
-</div>
-
-</div>
 <script src="./_shared/js/echarts.min.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
 (function() {
+  'use strict';
   var S = window.SITE, RAW = window.GOGPT_DATA;
-  var params = S.getParams();
   var qs = new URLSearchParams(location.search);
+  var uid = 1;
 
-  var state = {
-    region: params.region, fuel: params.fuel,
-    status: params.status.length === 1 ? params.status[0] : '',
-    country: params.country, kw: params.kw,
-    dim: qs.get('dim') || 'country',
-    metric: qs.get('metric') || 'cap',
-    chart: qs.get('chart') || 'auto',
-    dim2: qs.get('dim2') || '',
-    topn: qs.get('topn') != null ? +qs.get('topn') : 15
-  };
-
+  /* ================= 维度与指标注册表 ================= */
   var DIMS = {
-    country: { label: '国家/地区', idx: 2, key: function(r) { return r[2] || '未知'; }, disp: function(k) { return S.cnCountry(k); } },
-    region:  { label: '大区', idx: 3, key: function(r) { return r[3] || '未知'; }, disp: function(k) { return k; } },
-    status:  { label: '运营状态', idx: 4, key: function(r) { return r[4] || '未知'; }, disp: function(k) { return k; } },
-    fuel:    { label: '燃料大类', idx: 5, key: function(r) { return r[5] || '未知'; }, disp: function(k) { return k; } },
-    owner:   { label: '业主', idx: 10, key: function(r) { return (r[10] || '未知').split(';')[0].trim() || '未知'; }, disp: function(k) { return k; } },
-    year:    { label: '投运年份', idx: 9, key: function(r) { return r[9] && r[9] >= 1930 && r[9] <= 2035 ? (r[9] < 1980 ? 1979 : r[9]) : null; }, disp: function(k) { return k === 1979 ? '<1980' : String(k); } }
+    country: { label: '国家/地区', key: function(r) { return r[2] || '未知'; }, disp: function(k) { return S.cnCountry(k); } },
+    region:  { label: '大区', key: function(r) { return r[3] || '未知'; }, disp: function(k) { return k; } },
+    status:  { label: '状态', key: function(r) { return r[4] || '未知'; }, disp: function(k) { return k; }, order: S.STATUS_ORDER },
+    fuel:    { label: '燃料大类', key: function(r) { return r[5] || '未知'; }, disp: function(k) { return k; }, order: S.FUEL_ORDER },
+    owner:   { label: '业主', key: function(r) { return (r[10] || '').split(';')[0].trim() || '未知'; }, disp: function(k) { return k; } },
+    year:    { label: '投运年份', key: function(r) { return (r[9] && r[9] >= 1930 && r[9] <= 2035) ? (r[9] < 1980 ? 1979 : r[9]) : null; }, disp: function(k) { return k === 1979 ? '<1980' : String(k); }, order: 'num' },
+    decade:  { label: '投运年代', key: function(r) { return (r[9] && r[9] >= 1930 && r[9] <= 2035) ? Math.floor(r[9] / 10) * 10 : null; }, disp: function(k) { return k + '年代'; }, order: 'num' },
+    capbin:  { label: '单机容量档', key: function(r) { var c = r[6]; return c < 100 ? '0' : (c < 300 ? '1' : (c < 600 ? '2' : '3')); },
+               disp: function(k) { return ['<100 MW', '100–299 MW', '300–599 MW', '≥600 MW'][+k]; }, order: ['0', '1', '2', '3'] }
   };
-  var METRICS = { cap: '装机容量 (GW)', units: '机组数量 (台)', plants: '电厂数量 (座)' };
+  var DIM_KEYS = ['country', 'region', 'status', 'fuel', 'owner', 'year', 'decade', 'capbin'];
+  var METRICS = {
+    cap:    { label: '装机容量 (GW)' },
+    units:  { label: '机组数量 (台)' },
+    plants: { label: '电厂数量 (座)' },
+    avgunit:{ label: '平均单机容量 (MW)' }
+  };
+  var GLOBAL_DIM = { country: 'country', region: 'region', status: 'status', fuel: 'fuel' };
 
-  // ===== 筛选控件 =====
-  function fillSelect(id, values) {
-    var sel = document.getElementById(id);
-    values.forEach(function(v) {
-      var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
-    });
+  /* ================= 状态 ================= */
+  var G = { region: '', status: [], fuel: '', country: '', kw: '', topn: 15 };
+  var cards = [];
+  var mode = 'canvas';
+  var pivot = { row: 'country', col: 'status', metric: 'cap' };
+  var chartMap = {};
+  var newCard = { dim: 'country', metric: 'cap', chart: 'auto', dim2: '' };
+  var modalRows = [];
+
+  /* ================= 基础工具 ================= */
+  function metricOf(g, m) {
+    if (m === 'cap') return g.cap;
+    if (m === 'units') return g.units;
+    if (m === 'plants') return g.plants;
+    return g.units ? g.cap * 1000 / g.units : 0;
   }
-  var regions = [], fuels = [];
-  RAW.forEach(function(r) {
-    if (regions.indexOf(r[3]) < 0) regions.push(r[3]);
-    if (fuels.indexOf(r[5]) < 0) fuels.push(r[5]);
-  });
-  fillSelect('f-region', regions.sort());
-  fillSelect('f-status', S.STATUS_ORDER);
-  fillSelect('f-fuel', S.FUEL_ORDER.filter(function(f) { return fuels.indexOf(f) >= 0; }));
-  if (state.region) document.getElementById('f-region').value = state.region;
-  if (state.status) document.getElementById('f-status').value = state.status;
-  if (state.fuel) document.getElementById('f-fuel').value = state.fuel;
-  if (state.country) document.getElementById('f-country').value = state.country;
-  if (state.kw) document.getElementById('f-keyword').value = state.kw;
-  document.getElementById('w-dim').value = state.dim;
-  document.getElementById('w-metric').value = state.metric;
-  document.getElementById('w-chart').value = state.chart;
-  document.getElementById('w-dim2').value = state.dim2;
-  document.getElementById('w-topn').value = String(state.topn);
-
-  // ===== 聚合 =====
-  var filtered = RAW, groups = [], dim2Cats = [], chartType = 'bar_v';
-  var chart = echarts.init(document.getElementById('wb-chart'));
-  window.addEventListener('resize', function() { chart.resize(); });
-
-  function aggregate() {
-    var dim = DIMS[state.dim];
-    var map = {};
-    filtered.forEach(function(r) {
-      var k = dim.key(r);
-      if (k == null) return;
-      if (!map[k]) map[k] = { key: k, cap: 0, units: 0, plants: {}, rows: [] };
-      var g = map[k];
-      g.cap += r[6]; g.units++; g.plants[r[0]] = 1; g.rows.push(r);
-    });
-    var arr = Object.keys(map).map(function(k) {
-      var g = map[k];
-      return { key: g.key, disp: dim.disp(g.key), cap: g.cap / 1000, units: g.units, plants: Object.keys(g.plants).length, rows: g.rows };
-    });
-    if (state.dim === 'year') arr.sort(function(a, b) { return a.key - b.key; });
-    else arr.sort(function(a, b) { return metricOf(b) - metricOf(a); });
-    // Top N + 其他
-    if (state.dim !== 'year' && state.topn > 0 && arr.length > state.topn) {
-      var rest = arr.slice(state.topn);
-      var other = { key: '__other', disp: '其他 (' + rest.length + ')', cap: 0, units: 0, plants: 0, rows: [] };
-      var plantSet = {};
-      rest.forEach(function(g) { other.cap += g.cap; other.units += g.units; g.rows.forEach(function(r) { plantSet[r[0]] = 1; }); other.rows = other.rows.concat(g.rows); });
-      other.plants = Object.keys(plantSet).length;
-      arr = arr.slice(0, state.topn).concat([other]);
-    }
-    groups = arr;
-    // 对比维度类别
-    dim2Cats = [];
-    if (state.dim2) {
-      var d2 = DIMS[state.dim2];
-      var cm = {};
-      filtered.forEach(function(r) {
-        var k = d2.key(r);
-        if (k != null) cm[k] = (cm[k] || 0) + r[6];
-      });
-      dim2Cats = Object.keys(cm).sort(function(a, b) { return cm[b] - cm[a]; }).slice(0, 8);
-    }
+  function fmtVal(m, v) { return (m === 'cap' || m === 'avgunit') ? (+v).toFixed(1) : Math.round(v).toLocaleString(); }
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 1800);
   }
-  function metricOf(g) { return state.metric === 'cap' ? g.cap : (state.metric === 'units' ? g.units : g.plants); }
-  function metricOfRows(rows) {
-    if (state.metric === 'cap') return S.sumCap(rows) / 1000;
-    if (state.metric === 'units') return rows.length;
-    var p = {}; rows.forEach(function(r) { p[r[0]] = 1; });
-    return Object.keys(p).length;
-  }
-  function fmtVal(v) { return state.metric === 'cap' ? v.toFixed(1) : v.toLocaleString(); }
-
-  // ===== 图表 =====
-  function renderChart() {
-    var dim = DIMS[state.dim];
-    chartType = state.chart;
-    if (chartType === 'auto') chartType = state.dim === 'year' ? 'line' : 'bar_v';
-    if (state.dim2 && chartType !== 'bar_v') state.dim2tmpIgnored = true;
-    var title = '按' + dim.label + ' · ' + METRICS[state.metric];
-    document.getElementById('wb-title').textContent = title;
-    document.getElementById('wb-sub').textContent =
-      (state.dim2 && chartType === 'bar_v' ? '按' + DIMS[state.dim2].label + '堆叠 · ' : '') +
-      '基于当前筛选 ' + filtered.length.toLocaleString() + ' 台机组 · 共 ' + groups.length + ' 组';
-
-    var cats = groups.map(function(g) { return g.disp; });
-    var option;
-    var tooltip = Object.assign({}, S.EC.tooltip);
-
-    if (chartType === 'pie') {
-      option = {
-        animation: false, tooltip: Object.assign(tooltip, { formatter: function(p) { return p.name + '<br/><b>' + fmtVal(p.value) + '</b> (' + p.percent + '%)'; } }),
-        legend: { bottom: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll' },
-        color: ['#0e7c6f', '#5aa89e', '#e8a33d', '#8f77d4', '#4f8fd0', '#d4536a', '#94a3b8', '#c9a227', '#7a8ca3', '#c3cad4'],
-        series: [{
-          type: 'pie', radius: ['42%', '68%'], center: ['50%', '48%'],
-          label: { color: '#1b2430', formatter: '{b}\n{d}%', fontSize: 11, lineHeight: 15 },
-          labelLine: { lineStyle: { color: '#9aa3b2' } },
-          itemStyle: { borderColor: '#ffffff', borderWidth: 2, borderRadius: 4 },
-          data: groups.map(function(g) { return { name: g.disp, value: +metricOf(g).toFixed(2) }; })
-        }]
-      };
-    } else if (chartType === 'line') {
-      option = {
-        animation: false, tooltip: Object.assign(tooltip, { trigger: 'axis' }),
-        grid: { left: 64, right: 30, top: 34, bottom: 56 },
-        xAxis: { type: 'category', data: cats, axisLabel: { color: '#6b7688', fontSize: 10 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
-        yAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
-        series: [{
-          name: METRICS[state.metric], type: 'line', data: groups.map(function(g) { return +metricOf(g).toFixed(2); }),
-          symbol: 'circle', symbolSize: 5, smooth: 0.2,
-          lineStyle: { color: '#0e7c6f', width: 2.5 }, itemStyle: { color: '#0e7c6f' },
-          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [{ offset: 0, color: 'rgba(14,124,111,.18)' }, { offset: 1, color: 'rgba(14,124,111,0)' }] } }
-        }]
-      };
-    } else if (chartType === 'bar_h') {
-      option = {
-        animation: false, tooltip: Object.assign(tooltip, { formatter: function(p) { return p.name + '<br/><b>' + fmtVal(p.value) + '</b>'; } }),
-        grid: { left: 8, right: 70, top: 14, bottom: 26, containLabel: true },
-        xAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
-        yAxis: { type: 'category', inverse: true, data: cats,
-          axisLabel: { color: '#1b2430', fontSize: 11 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
-        series: [{
-          type: 'bar', barWidth: 14,
-          data: groups.map(function(g) { return { value: +metricOf(g).toFixed(2), itemStyle: { color: '#0e7c6f', borderRadius: [0, 5, 5, 0] } }; }),
-          label: { show: true, position: 'right', color: '#6b7688', fontSize: 10, formatter: function(p) { return fmtVal(p.value); } }
-        }]
-      };
-    } else { // bar_v
-      var series;
-      if (state.dim2) {
-        var d2 = DIMS[state.dim2];
-        series = dim2Cats.concat(['__other2']).map(function(ck) {
-          return {
-            name: ck === '__other2' ? '其他' : d2.disp(ck), type: 'bar', stack: 'total', barMaxWidth: 26,
-            itemStyle: { color: ck === '__other2' ? '#c3cad4' : (S.STATUS_COLOR[ck] || undefined) },
-            emphasis: { focus: 'series' },
-            data: groups.map(function(g) {
-              var rows = g.rows.filter(function(r) {
-                var k = d2.key(r);
-                return ck === '__other2' ? dim2Cats.indexOf(k) < 0 : k === ck;
-              });
-              return +metricOfRows(rows).toFixed(2);
-            })
-          };
-        });
-        // 配色兜底
-        var pal = ['#0e7c6f', '#e8a33d', '#8f77d4', '#4f8fd0', '#94a3b8', '#d4536a', '#c9a227', '#5aa89e'];
-        series.forEach(function(sr, i) { if (!sr.itemStyle.color) sr.itemStyle.color = pal[i % pal.length]; });
-      } else {
-        series = [{
-          type: 'bar', barMaxWidth: 26,
-          data: groups.map(function(g) {
-            var c = state.dim === 'status' ? (S.STATUS_COLOR[g.key] || '#0e7c6f') : '#0e7c6f';
-            return { value: +metricOf(g).toFixed(2), itemStyle: { color: c, borderRadius: [4, 4, 0, 0] } };
-          })
-        }];
-      }
-      option = {
-        animation: false,
-        tooltip: Object.assign(tooltip, { trigger: 'axis', axisPointer: { type: 'shadow' } }),
-        legend: state.dim2 ? { top: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll' } : undefined,
-        grid: { left: 64, right: 20, top: state.dim2 ? 42 : 26, bottom: state.dim === 'year' ? 56 : 92 },
-        xAxis: { type: 'category', data: cats,
-          axisLabel: { color: '#6b7688', fontSize: 10, interval: 0, rotate: state.dim === 'year' ? 45 : 34 },
-          axisLine: S.EC.axisLine, axisTick: { show: false } },
-        yAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
-        series: series
-      };
-    }
-    chart.setOption(option, { notMerge: true });
-  }
-
-  // ===== 聚合表 =====
-  function renderTable() {
-    var dim = DIMS[state.dim];
-    document.getElementById('agg-dim-head').textContent = dim.label;
-    var totalMetric = groups.reduce(function(s, g) { return s + metricOf(g); }, 0);
-    document.getElementById('agg-body').innerHTML = groups.map(function(g, i) {
-      return '<tr><td>' + (i + 1) + '</td><td title="' + S.esc(g.disp) + '">' + S.esc(g.disp) + '</td>' +
-        '<td class="cap">' + g.cap.toFixed(1) + '</td><td class="cap">' + g.units.toLocaleString() + '</td>' +
-        '<td class="cap">' + g.plants.toLocaleString() + '</td>' +
-        '<td class="cap">' + (totalMetric ? (metricOf(g) / totalMetric * 100).toFixed(1) : '0.0') + '%</td></tr>';
-    }).join('');
-  }
-
-  function refresh() {
-    filtered = S.filterRows(RAW, {
-      region: state.region, fuel: state.fuel,
-      status: state.status ? [state.status] : [],
-      country: state.country, kw: state.kw
-    });
-    document.getElementById('f-count').innerHTML = '当前筛选 <b>' + filtered.length.toLocaleString() + '</b> 条';
-    aggregate();
-    renderChart();
-    renderTable();
-  }
-
-  // ===== 报告生成 =====
-  function filterDesc() {
-    var parts = [];
-    if (state.region) parts.push('大区=' + state.region);
-    if (state.status) parts.push('状态=' + state.status);
-    if (state.fuel) parts.push('燃料=' + state.fuel);
-    if (state.country) parts.push('国家/地区≈' + state.country);
-    if (state.kw) parts.push('关键词≈' + state.kw);
-    return parts.length ? parts.join('，') : '无（全量数据）';
-  }
-  function buildReport() {
-    var dim = DIMS[state.dim];
-    var totalCap = groups.reduce(function(s, g) { return s + g.cap; }, 0);
-    var totalUnits = groups.reduce(function(s, g) { return s + g.units; }, 0);
-    var totalPlants = groups.reduce(function(s, g) { return s + g.plants; }, 0);
-    var totalMetric = groups.reduce(function(s, g) { return s + metricOf(g); }, 0);
-    var today = new Date().toISOString().slice(0, 10);
-    var chartTypes = { bar_v: '柱状图', bar_h: '条形图', pie: '饼图', line: '折线图' };
-    var title = '全球油气电厂数据分析报告 · 按' + dim.label;
-
-    var g0 = groups[0], g1 = groups[1];
-    var cr3 = totalMetric ? groups.slice(0, 3).reduce(function(s, g) { return s + metricOf(g); }, 0) / totalMetric * 100 : 0;
-    var cr10 = totalMetric ? groups.slice(0, 10).reduce(function(s, g) { return s + metricOf(g); }, 0) / totalMetric * 100 : 0;
-
-    var md = [];
-    md.push('# ' + title);
-    md.push('');
-    md.push('> 数据：Global Energy Monitor GOGPT ' + S.VERSION + ' · 生成时间：' + today + ' · 分析工具：GOGPT 数据观察站');
-    md.push('');
-    md.push('## 一、分析范围');
-    md.push('');
-    md.push('- 筛选条件：' + filterDesc());
-    md.push('- 覆盖记录：' + totalUnits.toLocaleString() + ' 台机组 / ' + totalPlants.toLocaleString() + ' 座电厂');
-    md.push('- 总装机容量：' + totalCap.toFixed(1) + ' GW');
-    md.push('- 分析视角：按' + dim.label + '分组，指标为' + METRICS[state.metric] + (state.dim2 && chartType === 'bar_v' ? '，并按' + DIMS[state.dim2].label + '堆叠对比' : '') + '（' + chartTypes[chartType] + '）');
-    md.push('');
-    md.push('## 二、总体概况');
-    md.push('');
-    md.push('在当前分析范围内，' + dim.label + '共分为 ' + groups.length + ' 组。' +
-      (g0 ? '排名第一的是 **' + g0.disp + '**，' + METRICS[state.metric] + '为 **' + fmtVal(metricOf(g0)) + '**，占总量 ' + (metricOf(g0) / totalMetric * 100).toFixed(1) + '%。' : ''));
-    md.push('');
-    md.push('## 三、' + dim.label + '结构（Top ' + Math.min(groups.length, 10) + '）');
-    md.push('');
-    md.push('| # | ' + dim.label + ' | 装机容量 (GW) | 机组数 (台) | 电厂数 (座) | 占比 |');
-    md.push('|---|---|---|---|---|---|');
-    groups.slice(0, 10).forEach(function(g, i) {
-      md.push('| ' + (i + 1) + ' | ' + g.disp + ' | ' + g.cap.toFixed(1) + ' | ' + g.units.toLocaleString() + ' | ' + g.plants.toLocaleString() + ' | ' + (metricOf(g) / totalMetric * 100).toFixed(1) + '% |');
-    });
-    md.push('');
-    md.push('## 四、要点结论');
-    md.push('');
-    if (g0 && g1) md.push('- **头部领先**：' + g0.disp + '以 ' + fmtVal(metricOf(g0)) + ' 居首，是第二名 ' + g1.disp + '（' + fmtVal(metricOf(g1)) + '）的 ' + (metricOf(g0) / metricOf(g1)).toFixed(1) + ' 倍。');
-    md.push('- **集中度**：CR3（前三组）占 ' + cr3.toFixed(1) + '%，CR10 占 ' + cr10.toFixed(1) + '%，' + (cr3 > 60 ? '集中度高，头部效应显著。' : (cr3 > 40 ? '集中度中等，头部有明显优势。' : '分布相对分散。')));
-    if (groups.length > 10) md.push('- **长尾**：Top 10 之外仍有 ' + (groups.length - 10) + ' 组，合计占 ' + (100 - cr10).toFixed(1) + '%。');
-    if (state.dim2 && chartType === 'bar_v') md.push('- **结构对比**：按' + DIMS[state.dim2].label + '堆叠后可见各组内部构成差异，明细见聚合结果表。');
-    md.push('');
-    md.push('---');
-    md.push('*本报告由 GOGPT 数据观察站分析工具自动生成，数据以 Global Energy Monitor 官方发布为准（CC BY 4.0）。*');
-
-    return { title: title, md: md.join('\n'), groups: groups, totalCap: totalCap, totalUnits: totalUnits, totalPlants: totalPlants, totalMetric: totalMetric };
-  }
-
-  function mdToHtml(md) {
-    var lines = md.split('\n'), html = [], inTable = false, inUl = false;
-    function inline(t) {
-      return t.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
-    }
-    lines.forEach(function(l) {
-      if (/^\|.*\|$/.test(l)) {
-        if (!inTable) { html.push('<table><tbody>'); inTable = true; }
-        if (/^\|[\s\-|]+\|$/.test(l)) return;
-        var cells = l.slice(1, -1).split('|').map(function(c) { return c.trim(); });
-        var tag = html.filter(function(x) { return x.indexOf('<table>') === 0; }).length && !html.some(function(x) { return x.indexOf('<tr>') === 0; }) ? 'th' : 'td';
-        html.push('<tr>' + cells.map(function(c) { return '<' + tag + '>' + inline(c) + '</' + tag + '>'; }).join('') + '</tr>');
-        return;
-      }
-      if (inTable) { html.push('</tbody></table>'); inTable = false; }
-      if (/^- /.test(l)) {
-        if (!inUl) { html.push('<ul>'); inUl = true; }
-        html.push('<li>' + inline(l.slice(2)) + '</li>');
-        return;
-      }
-      if (inUl) { html.push('</ul>'); inUl = false; }
-      if (/^# /.test(l)) html.push('<h2>' + inline(l.slice(2)) + '</h2>');
-      else if (/^## /.test(l)) html.push('<h4>' + inline(l.slice(3)) + '</h4>');
-      else if (/^> /.test(l)) html.push('<p class="rp-meta">' + inline(l.slice(2)) + '</p>');
-      else if (/^---$/.test(l)) html.push('<hr style="border:none;border-top:1px solid var(--rule);margin:1rem 0">');
-      else if (l.trim()) html.push('<p>' + inline(l) + '</p>');
-    });
-    if (inTable) html.push('</tbody></table>');
-    if (inUl) html.push('</ul>');
-    return html.join('');
-  }
-
-  var lastReport = null;
-  document.getElementById('btn-report').addEventListener('click', function() {
-    lastReport = buildReport();
-    var img = '';
-    try { img = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' }); } catch (e) {}
-    var body = mdToHtml(lastReport.md);
-    // 在"三、"小节后插入图表
-    var marker = '<h4>三、';
-    var idx = body.indexOf(marker);
-    if (img && idx > 0) {
-      var endH = body.indexOf('</h4>', idx);
-      body = body.slice(0, endH + 5) + '<img class="rp-chart-img" src="' + img + '" alt="分析图表">' + body.slice(endH + 5);
-    }
-    document.getElementById('report-body').innerHTML = body;
-    document.getElementById('report-panel').classList.add('show');
-    document.getElementById('report-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  document.getElementById('rp-copy').addEventListener('click', function() {
-    if (!lastReport) return;
-    navigator.clipboard.writeText(lastReport.md).then(function() {
-      var b = document.getElementById('rp-copy');
-      b.textContent = '已复制 ✓';
-      setTimeout(function() { b.textContent = '复制 Markdown'; }, 1500);
-    });
-  });
+  function b64enc(s) { return btoa(unescape(encodeURIComponent(s))); }
+  function b64dec(s) { return decodeURIComponent(escape(atob(s))); }
   function download(name, content, mime) {
     var blob = content instanceof Blob ? content : new Blob([content], { type: mime });
     var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    a.click();
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
     URL.revokeObjectURL(a.href);
   }
+
+  /* ================= 聚合 ================= */
+  function applyG(rows) {
+    return S.filterRows(rows, { region: G.region, status: G.status, fuel: G.fuel, country: G.country, kw: G.kw });
+  }
+  function cardRows(card) {
+    var rows = applyG(RAW);
+    card.drill.forEach(function(f) {
+      rows = rows.filter(function(r) { return DIMS[f.dim].key(r) === f.value; });
+    });
+    return rows;
+  }
+  function aggregate(rows, dimKey, topn) {
+    var d = DIMS[dimKey], map = {};
+    rows.forEach(function(r) {
+      var k = d.key(r);
+      if (k == null) return;
+      var g = map[k];
+      if (!g) g = map[k] = { key: k, cap: 0, units: 0, plants: {} };
+      g.cap += r[6]; g.units++; g.plants[r[0]] = 1;
+    });
+    var arr = Object.keys(map).map(function(k) {
+      var g = map[k];
+      return { key: k, disp: d.disp(k), cap: g.cap / 1000, units: g.units, plants: Object.keys(g.plants).length, rows: [] };
+    });
+    var byKey = {};
+    rows.forEach(function(r) {
+      var k = d.key(r);
+      if (k == null) return;
+      if (!byKey[k]) byKey[k] = [];
+      byKey[k].push(r);
+    });
+    arr.forEach(function(g) { g.rows = byKey[g.key] || []; });
+    if (d.order === 'num') arr.sort(function(a, b) { return a.key - b.key; });
+    else if (Array.isArray(d.order)) arr.sort(function(a, b) { return d.order.indexOf(a.key) - d.order.indexOf(b.key); });
+    else arr.sort(function(a, b) { return b.cap - a.cap; });
+    if (!d.order && topn > 0 && arr.length > topn) {
+      var rest = arr.slice(topn), ps = {};
+      var other = { key: '__other', disp: '其他 (' + rest.length + ')', cap: 0, units: 0, plants: 0, rows: [] };
+      rest.forEach(function(g) {
+        other.cap += g.cap; other.units += g.units;
+        g.rows.forEach(function(r) { ps[r[0]] = 1; });
+        other.rows = other.rows.concat(g.rows);
+      });
+      other.plants = Object.keys(ps).length;
+      arr = arr.slice(0, topn).concat([other]);
+    }
+    return arr;
+  }
+  function cardStats(groups, metric) {
+    var real = groups.filter(function(g) { return g.key !== '__other'; });
+    var total = real.reduce(function(s, g) { return s + metricOf(g, metric); }, 0) || 1;
+    function share(n) { return real.slice(0, n).reduce(function(s, g) { return s + metricOf(g, metric); }, 0) / total * 100; }
+    var hhi = real.reduce(function(s, g) { var p = metricOf(g, metric) / total * 100; return s + p * p; }, 0);
+    return { cr3: share(3), cr10: share(10), hhi: Math.round(hhi) };
+  }
+
+  /* ================= 图表构建 ================= */
+  var PAL = ['#0e7c6f', '#e8a33d', '#8f77d4', '#4f8fd0', '#94a3b8', '#d4536a', '#c9a227', '#7a8ca3', '#5aa89e', '#c3cad4'];
+
+  function dim2Cats(rows, dim2) {
+    var d2 = DIMS[dim2], cm = {};
+    rows.forEach(function(r) { var k = d2.key(r); if (k != null) cm[k] = (cm[k] || 0) + r[6]; });
+    return Object.keys(cm).sort(function(a, b) { return cm[b] - cm[a]; }).slice(0, 9);
+  }
+
+  function buildOption(card, groups) {
+    var dim = DIMS[card.dim];
+    var chart = card.chart === 'auto' ? (card.dim === 'year' || card.dim === 'decade' ? 'line' : 'bar_v') : card.chart;
+    if (chart === 'heatmap' && !card.dim2) card = Object.assign({}, card, { dim2: 'status' });
+    var cats = groups.map(function(g) { return g.disp; });
+    var tip = Object.assign({}, S.EC.tooltip);
+    var labelRot = cats.length > 8 ? (card.dim === 'year' ? 45 : 32) : 0;
+
+    if (chart === 'pie') {
+      return { chart: 'pie', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { formatter: function(p) { return p.name + '<br/><b>' + fmtVal(card.metric, p.value) + '</b> (' + p.percent + '%)'; } }),
+        legend: { bottom: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll' },
+        color: PAL,
+        series: [{ type: 'pie', radius: ['40%', '68%'], center: ['50%', '47%'],
+          label: { color: '#1b2430', formatter: '{b}\n{d}%', fontSize: 10, lineHeight: 13 },
+          labelLine: { lineStyle: { color: '#9aa3b2' } },
+          itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
+          data: groups.map(function(g) { return { name: g.disp, value: +metricOf(g, card.metric).toFixed(2) }; }) }]
+      }};
+    }
+    if (chart === 'line') {
+      return { chart: 'line', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { trigger: 'axis' }),
+        grid: { left: 62, right: 26, top: 28, bottom: labelRot ? 58 : 34 },
+        dataZoom: cats.length > 30 ? [{ type: 'slider', height: 16, bottom: 4 }] : undefined,
+        xAxis: { type: 'category', data: cats, axisLabel: { color: '#6b7688', fontSize: 10, rotate: labelRot }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+        yAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
+        series: [{ type: 'line', data: groups.map(function(g) { return +metricOf(g, card.metric).toFixed(2); }),
+          symbol: 'circle', symbolSize: 5, smooth: 0.2,
+          lineStyle: { color: '#0e7c6f', width: 2.5 }, itemStyle: { color: '#0e7c6f' },
+          areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: 'rgba(14,124,111,.18)' }, { offset: 1, color: 'rgba(14,124,111,0)' }] } } }]
+      }};
+    }
+    if (chart === 'bar_h') {
+      return { chart: 'bar_h', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { formatter: function(p) { return p.name + '<br/><b>' + fmtVal(card.metric, p.value) + '</b>'; } }),
+        grid: { left: 8, right: 74, top: 12, bottom: 24, containLabel: true },
+        xAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
+        yAxis: { type: 'category', inverse: true, data: cats, axisLabel: { color: '#1b2430', fontSize: 11 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+        series: [{ type: 'bar', barWidth: 13,
+          data: groups.map(function(g) { return { value: +metricOf(g, card.metric).toFixed(2), itemStyle: { color: card.dim === 'status' ? (S.STATUS_COLOR[g.key] || '#0e7c6f') : '#0e7c6f', borderRadius: [0, 5, 5, 0] } }; }),
+          label: { show: true, position: 'right', color: '#6b7688', fontSize: 10, formatter: function(p) { return fmtVal(card.metric, p.value); } } }]
+      }};
+    }
+    if (chart === 'heatmap') {
+      var dim2 = card.dim2 || 'status';
+      var d2 = DIMS[dim2];
+      var cols = dim2Cats(card._rows, dim2);
+      var data = [];
+      groups.forEach(function(g, yi) {
+        cols.forEach(function(ck, xi) {
+          var sub = g.rows.filter(function(r) { return d2.key(r) === ck; });
+          if (!sub.length) return;
+          var v = metricOf({ cap: S.sumCap(sub) / 1000, units: sub.length,
+            plants: Object.keys(sub.reduce(function(m, r) { m[r[0]] = 1; return m; }, {})).length }, card.metric);
+          data.push([xi, yi, +v.toFixed(2)]);
+        });
+      });
+      var max = data.reduce(function(m, d) { return Math.max(m, d[2]); }, 0) || 1;
+      card._hmRows = groups; card._hmCols = cols.map(function(k) { return { key: k, disp: d2.disp(k), dimKey: dim2 }; });
+      return { chart: 'heatmap', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { formatter: function(p) {
+          return cats[p.value[1]] + ' × ' + card._hmCols[p.value[0]].disp + '<br/><b>' + fmtVal(card.metric, p.value[2]) + '</b>'; } }),
+        grid: { left: 8, right: 24, top: 14, bottom: 64, containLabel: true },
+        xAxis: { type: 'category', data: card._hmCols.map(function(c) { return c.disp; }),
+          axisLabel: { color: '#6b7688', fontSize: 10, rotate: 30 }, axisLine: S.EC.axisLine, axisTick: { show: false }, splitLine: { show: false } },
+        yAxis: { type: 'category', data: cats, inverse: true, axisLabel: { color: '#1b2430', fontSize: 10 }, axisLine: S.EC.axisLine, axisTick: { show: false }, splitLine: { show: false } },
+        visualMap: { min: 0, max: max, calculable: false, orient: 'horizontal', left: 'center', bottom: 0,
+          itemWidth: 12, itemHeight: 90, textStyle: { color: '#6b7688', fontSize: 9 },
+          inRange: { color: ['#f2f6f5', '#9fc9c1', '#0e7c6f'] } },
+        series: [{ type: 'heatmap', data: data,
+          label: { show: data.length <= 80, color: '#1b2430', fontSize: 9, formatter: function(p) { return fmtVal(card.metric, p.value[2]); } },
+          itemStyle: { borderColor: '#fff', borderWidth: 1, borderRadius: 2 } }]
+      }};
+    }
+    if (chart === 'treemap') {
+      return { chart: 'treemap', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { formatter: function(p) { return p.name + '<br/><b>' + fmtVal(card.metric, p.value) + '</b>'; } }),
+        color: PAL,
+        series: [{ type: 'treemap', roam: false, nodeClick: false, breadcrumb: { show: false },
+          left: 0, right: 0, top: 6, bottom: 6,
+          label: { fontSize: 11, color: '#fff', formatter: '{b}\n{c}' },
+          itemStyle: { borderColor: '#fff', borderWidth: 2, gapWidth: 2 },
+          data: groups.map(function(g, i) { return { name: g.disp, value: +metricOf(g, card.metric).toFixed(2), itemStyle: { color: PAL[i % PAL.length] } }; }) }]
+      }};
+    }
+    if (chart === 'scatter') {
+      var top5 = groups.slice().sort(function(a, b) { return metricOf(b, card.metric) - metricOf(a, card.metric); }).slice(0, 5).map(function(g) { return g.disp; });
+      return { chart: 'scatter', opt: {
+        animation: false,
+        tooltip: Object.assign(tip, { formatter: function(p) {
+          return '<b>' + p.name + '</b><br/>机组 ' + p.value[0].toLocaleString() + ' 台 · 装机 ' + p.value[1].toFixed(1) + ' GW · 电厂 ' + p.value[2] + ' 座'; } }),
+        grid: { left: 56, right: 26, top: 30, bottom: 46 },
+        xAxis: { type: 'value', name: '机组数 (台)', nameTextStyle: { color: '#9aa3b2', fontSize: 10 }, axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine, scale: true },
+        yAxis: { type: 'value', name: '装机 (GW)', nameTextStyle: { color: '#9aa3b2', fontSize: 10 }, axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine, scale: true },
+        series: [{ type: 'scatter',
+          data: groups.filter(function(g) { return g.key !== '__other'; }).map(function(g) {
+            return { name: g.disp, value: [g.units, +g.cap.toFixed(1), g.plants] };
+          }),
+          symbolSize: function(v) { return 6 + Math.sqrt(v[2]) * 1.6; },
+          itemStyle: { color: 'rgba(14,124,111,.72)', borderColor: '#fff', borderWidth: 1 },
+          label: { show: true, formatter: function(p) { return top5.indexOf(p.name) >= 0 ? p.name : ''; }, position: 'top', color: '#1b2430', fontSize: 10 },
+          labelLayout: { hideOverlap: true } }]
+      }};
+    }
+    // bar_v（含堆叠）
+    var series;
+    if (card.dim2) {
+      var d2 = DIMS[card.dim2];
+      var cols = dim2Cats(card._rows, card.dim2);
+      series = cols.concat(['__o']).map(function(ck, i) {
+        return {
+          name: ck === '__o' ? '其他' : d2.disp(ck), type: 'bar', stack: 'total', barMaxWidth: 26,
+          itemStyle: { color: ck === '__o' ? '#c3cad4' : (S.STATUS_COLOR[ck] || PAL[i % PAL.length]) },
+          emphasis: { focus: 'series' },
+          data: groups.map(function(g) {
+            var sub = g.rows.filter(function(r) {
+              var k = d2.key(r);
+              return ck === '__o' ? cols.indexOf(k) < 0 : k === ck;
+            });
+            var v = metricOf({ cap: S.sumCap(sub) / 1000, units: sub.length,
+              plants: Object.keys(sub.reduce(function(m, r) { m[r[0]] = 1; return m; }, {})).length }, card.metric);
+            return +v.toFixed(2);
+          })
+        };
+      });
+    } else {
+      series = [{ type: 'bar', barMaxWidth: 26,
+        data: groups.map(function(g) {
+          var c = card.dim === 'status' ? (S.STATUS_COLOR[g.key] || '#0e7c6f') : '#0e7c6f';
+          return { value: +metricOf(g, card.metric).toFixed(2), itemStyle: { color: c, borderRadius: [4, 4, 0, 0] } };
+        }) }];
+    }
+    return { chart: 'bar_v', opt: {
+      animation: false,
+      tooltip: Object.assign(tip, { trigger: 'axis', axisPointer: { type: 'shadow' } }),
+      legend: card.dim2 ? { top: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 12, itemHeight: 8, type: 'scroll' } : undefined,
+      grid: { left: 62, right: 20, top: card.dim2 ? 40 : 24, bottom: labelRot ? 64 : 40 },
+      dataZoom: cats.length > 16 ? [{ type: 'slider', height: 16, bottom: 4 }] : undefined,
+      xAxis: { type: 'category', data: cats, axisLabel: { color: '#6b7688', fontSize: 10, interval: 0, rotate: labelRot }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+      yAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
+      series: series
+    }};
+  }
+
+  /* ================= 卡片渲染 ================= */
+  function cardTitle(card) {
+    var t = '按' + DIMS[card.dim].label + ' · ' + METRICS[card.metric].label;
+    if (card.dim2 && ['stack', 'heatmap'].indexOf(resolvedChart(card)) >= 0) t += ' × ' + DIMS[card.dim2].label;
+    return t;
+  }
+  function resolvedChart(card) {
+    return card.chart === 'auto' ? (card.dim === 'year' || card.dim === 'decade' ? 'line' : 'bar_v') : card.chart;
+  }
+
+  function renderCards() {
+    var grid = document.getElementById('cards-grid');
+    if (!cards.length) {
+      grid.innerHTML = '<div class="canvas-empty" style="grid-column:1/-1">画布是空的——从左侧<b>模板库</b>一键载入，或在「新建分析卡片」里选好维度和指标后点「添加到画布」。</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    cards.forEach(function(card) {
+      var el = document.createElement('div');
+      el.className = 'ana-card' + (card.full ? ' full' : '');
+      el.innerHTML =
+        '<div class="ac-head"><div class="ac-title"><h3>' + S.esc(cardTitle(card)) + '</h3><div class="ac-sub"></div></div>' +
+        '<div class="ac-btns">' +
+        '<button class="icon-btn" data-act="full" title="放大/还原">⛶</button>' +
+        '<button class="icon-btn" data-act="copy" title="复制卡片">⧉</button>' +
+        '<button class="icon-btn" data-act="png" title="导出 PNG">⤓</button>' +
+        '<button class="icon-btn" data-act="csv" title="导出聚合 CSV">▤</button>' +
+        '<button class="icon-btn danger" data-act="del" title="删除">✕</button>' +
+        '</div></div>' +
+        '<div class="ac-bc"></div>' +
+        '<div class="ac-chart"></div>';
+      grid.appendChild(el);
+      renderCardContent(card, el);
+      el.querySelectorAll('.icon-btn').forEach(function(b) {
+        b.addEventListener('click', function() { cardAction(b.getAttribute('data-act'), card); });
+      });
+    });
+  }
+
+  function renderCardContent(card, el) {
+    var rows = cardRows(card);
+    card._rows = rows;
+    var groups = aggregate(rows, card.dim, card.topn != null ? card.topn : G.topn);
+    var sub = el.querySelector('.ac-sub');
+    var bcEl = el.querySelector('.ac-bc');
+    var chartEl = el.querySelector('.ac-chart');
+
+    var stats = cardStats(groups, card.metric);
+    var drillTxt = card.drill.length ? '下钻：' + card.drill.map(function(f) { return DIMS[f.dim].disp(f.value); }).join(' › ') + ' · ' : '';
+    sub.textContent = drillTxt + groups.length + ' 组 · ' + rows.length.toLocaleString() + ' 台机组 · CR3 ' + stats.cr3.toFixed(0) + '% · CR10 ' + stats.cr10.toFixed(0) + '% · HHI ' + stats.hhi;
+
+    // 面包屑
+    if (card.drill.length) {
+      bcEl.style.display = 'flex';
+      var html = '<button class="bc-seg" data-i="-1">全部</button>';
+      card.drill.forEach(function(f, i) {
+        html += '<span class="bc-sep">›</span><button class="bc-seg" data-i="' + i + '">' + S.esc(DIMS[f.dim].disp(f.value)) + '</button>';
+      });
+      bcEl.innerHTML = html;
+      bcEl.querySelectorAll('.bc-seg').forEach(function(b) {
+        b.addEventListener('click', function() {
+          var i = +b.getAttribute('data-i');
+          if (i < 0) { card.drill = []; card.dim = card.drill0 || card.dim; }
+          else { card.dim = card.drill[i].dim; card.drill = card.drill.slice(0, i + 1); }
+          refreshCard(card);
+        });
+      });
+    } else { bcEl.style.display = 'none'; bcEl.innerHTML = ''; }
+
+    if (!groups.length) {
+      chartEl.outerHTML = '<div class="ac-empty">当前筛选无匹配数据</div>';
+      delete chartMap[card.id];
+      return;
+    }
+    var built = buildOption(card, groups);
+    card._builtChart = built.chart;
+    if (chartMap[card.id]) { chartMap[card.id].dispose(); }
+    var inst = echarts.init(chartEl);
+    inst.setOption(built.opt, { notMerge: true });
+    chartMap[card.id] = inst;
+
+    inst.on('click', function(p) {
+      if (built.chart === 'heatmap') {
+        var cols = card._hmCols;
+        if (!p.value || !p.value.length) return;
+        var col = cols[p.value[0]], rowGroup = groups[p.value[1]];
+        if (!col || !rowGroup) return;
+        openCtx(p.event.offsetX + chartEl.getBoundingClientRect().left, p.event.offsetY + chartEl.getBoundingClientRect().top, [
+          { label: '查看「' + rowGroup.disp + ' × ' + col.disp + '」明细', fn: function() {
+            openDetail(rowGroup.disp + ' × ' + col.disp, [{ dim: card.dim, value: rowGroup.key === '__other' ? null : rowGroup.key }, { dim: col.dimKey, value: col.key }].filter(function(f) { return f.value !== null; }));
+          } },
+          gFilterItem(card.dim, rowGroup),
+          gFilterItem(col.dimKey, { key: col.key, disp: col.disp })
+        ]);
+        return;
+      }
+      var g = groups.filter(function(x) { return x.disp === p.name; })[0];
+      if (!g) return;
+      var items = [];
+      var drillDims = ['status', 'fuel', 'region', 'decade', 'capbin', 'owner', 'country'].filter(function(dk) { return dk !== card.dim; }).slice(0, 5);
+      if (g.key !== '__other') {
+        drillDims.forEach(function(dk) {
+          items.push({ label: '下钻 → 按' + DIMS[dk].label + '看「' + g.disp + '」', fn: function() {
+            card.drill0 = card.drill0 || card.dim;
+            card.drill.push({ dim: card.dim, value: g.key });
+            card.dim = dk;
+            refreshCard(card);
+          } });
+        });
+        items.push({ label: '查看「' + g.disp + '」明细记录', fn: function() {
+          openDetail(g.disp, [{ dim: card.dim, value: g.key }]);
+        } });
+        var gf = gFilterItem(card.dim, g);
+        if (gf) items.push(gf);
+      } else {
+        items.push({ label: '查看「其他」明细记录', fn: function() { openDetail('其他', null, g.rows); } });
+      }
+      var rect = chartEl.getBoundingClientRect();
+      openCtx(p.event.clientX || (rect.left + p.event.offsetX), p.event.clientY || (rect.top + p.event.offsetY), items);
+    });
+  }
+
+  function gFilterItem(dimKey, g) {
+    if (g.key === '__other' || !GLOBAL_DIM[dimKey]) return null;
+    return { label: '设为全局筛选：' + DIMS[dimKey].label + ' = ' + g.disp, fn: function() {
+      var gd = GLOBAL_DIM[dimKey];
+      if (gd === 'status') { G.status = [g.key]; renderStatusChips(); }
+      else { G[gd] = g.key; var sel = document.getElementById('g-' + (gd === 'country' ? 'country' : gd)); if (sel && sel.tagName === 'SELECT') sel.value = g.key; else if (gd === 'country') document.getElementById('g-country').value = g.key; }
+      toast('已应用全局筛选');
+      refreshAll();
+    } };
+  }
+
+  function refreshCard(card) {
+    var els = document.querySelectorAll('.ana-card');
+    var idx = cards.indexOf(card);
+    if (idx >= 0 && els[idx]) renderCardContent(card, els[idx]);
+    else refreshAll();
+  }
+
+  function cardAction(act, card) {
+    if (act === 'del') { cards.splice(cards.indexOf(card), 1); if (chartMap[card.id]) { chartMap[card.id].dispose(); delete chartMap[card.id]; } renderCards(); persistLast(); }
+    if (act === 'full') { card.full = !card.full; renderCards(); persistLast(); }
+    if (act === 'copy') { var c = JSON.parse(JSON.stringify({ dim: card.dim, metric: card.metric, chart: card.chart, dim2: card.dim2, topn: card.topn, drill: card.drill, full: card.full })); c.id = uid++; cards.splice(cards.indexOf(card) + 1, 0, c); renderCards(); persistLast(); toast('已复制卡片'); }
+    if (act === 'png') {
+      var inst = chartMap[card.id];
+      if (!inst) return;
+      var a = document.createElement('a');
+      a.href = inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' });
+      a.download = cardTitle(card).replace(/[\\/:*?"<>|·]/g, '-') + '.png';
+      a.click();
+    }
+    if (act === 'csv') {
+      var rows = cardRows(card);
+      var groups = aggregate(rows, card.dim, card.topn != null ? card.topn : G.topn);
+      var total = groups.reduce(function(s, g) { return s + metricOf(g, card.metric); }, 0) || 1;
+      var lines = [DIMS[card.dim].label + ',装机容量GW,机组数,电厂数,占比%'].concat(
+        groups.map(function(g) { return '"' + g.disp + '",' + g.cap.toFixed(1) + ',' + g.units + ',' + g.plants + ',' + (metricOf(g, card.metric) / total * 100).toFixed(1); }));
+      download(cardTitle(card).replace(/[\\/:*?"<>|·]/g, '-') + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+    }
+  }
+
+  /* ================= 右键/点击菜单 ================= */
+  var ctxEl = document.getElementById('ctx-menu');
+  function openCtx(x, y, items) {
+    items = items.filter(Boolean);
+    if (!items.length) return;
+    ctxEl.innerHTML = '<div class="ctx-title">分析操作</div>' + items.map(function(it, i) {
+      return '<button data-i="' + i + '">' + S.esc(it.label) + '</button>';
+    }).join('');
+    ctxEl.classList.add('show');
+    ctxEl.style.left = Math.min(x, window.innerWidth - 230) + 'px';
+    ctxEl.style.top = Math.min(y, window.innerHeight - items.length * 34 - 30) + 'px';
+    ctxEl.querySelectorAll('button').forEach(function(b) {
+      b.addEventListener('click', function() { closeCtx(); items[+b.getAttribute('data-i')].fn(); });
+    });
+  }
+  function closeCtx() { ctxEl.classList.remove('show'); }
+  document.addEventListener('click', function(e) { if (!ctxEl.contains(e.target)) closeCtx(); });
+  document.addEventListener('scroll', closeCtx, true);
+
+  /* ================= 明细弹窗 ================= */
+  var backdrop = document.getElementById('modal-backdrop');
+  function openDetail(title, filters, presetRows) {
+    var rows = presetRows || RAW;
+    if (filters) {
+      rows = rows;
+      filters.forEach(function(f) {
+        if (f.value == null) return;
+        var d = DIMS[f.dim];
+        rows = rows.filter(function(r) { return d.key(r) === f.value; });
+      });
+      var g1 = applyG(rows); // 应用全局筛选
+      rows = presetRows ? g1 : g1;
+    } else {
+      rows = applyG(rows);
+    }
+    modalRows = rows;
+    document.getElementById('modal-title').textContent = '明细记录 · ' + title;
+    var show = rows.slice(0, 300);
+    document.getElementById('modal-body').innerHTML =
+      '<table class="detail-table"><thead><tr><th>电厂</th><th>机组</th><th>国家/地区</th><th>状态</th><th>燃料</th><th>容量MW</th><th>投运</th><th>业主</th></tr></thead><tbody>' +
+      show.map(function(r) {
+        return '<tr><td>' + S.esc(r[0]) + '</td><td>' + S.esc(r[1]) + '</td><td>' + S.esc(S.cnCountry(r[2])) + '</td><td>' + r[4] + '</td><td>' + r[5] + '</td><td class="cap">' + r[6].toLocaleString() + '</td><td class="cap">' + (r[9] || '') + '</td><td>' + S.esc(r[10]) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+    document.getElementById('modal-info').textContent = '共 ' + rows.length.toLocaleString() + ' 条' + (rows.length > 300 ? '，显示前 300 条' : '');
+    backdrop.classList.add('show');
+  }
+  document.getElementById('modal-close').addEventListener('click', function() { backdrop.classList.remove('show'); });
+  backdrop.addEventListener('click', function(e) { if (e.target === backdrop) backdrop.classList.remove('show'); });
+  document.getElementById('modal-export').addEventListener('click', function() {
+    var lines = ['电厂名称,机组名称,国家/地区,状态,燃料大类,容量MW,投运年份,业主']
+      .concat(modalRows.slice(0, 5000).map(function(r) {
+        return ['"' + r[0] + '"','"' + r[1] + '"','"' + r[2] + '"', r[4], r[5], r[6], r[9] || '', '"' + (r[10] || '') + '"'].join(',');
+      }));
+    download('明细记录.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  });
+
+  /* ================= 侧栏渲染 ================= */
+  function renderSidebarStatics() {
+    // 维度 chips
+    document.getElementById('c-dim').innerHTML = DIM_KEYS.map(function(k) {
+      return '<span class="f-chip' + (newCard.dim === k ? ' on' : '') + '" data-k="' + k + '">' + DIMS[k].label + '</span>';
+    }).join('');
+    document.getElementById('c-dim').querySelectorAll('.f-chip').forEach(function(c) {
+      c.addEventListener('click', function() { newCard.dim = c.getAttribute('data-k'); renderSidebarStatics(); });
+    });
+    // 指标 chips
+    document.getElementById('c-metric').innerHTML = Object.keys(METRICS).map(function(k) {
+      return '<span class="f-chip' + (newCard.metric === k ? ' on' : '') + '" data-k="' + k + '">' + METRICS[k].label.split(' ')[0] + '</span>';
+    }).join('');
+    document.getElementById('c-metric').querySelectorAll('.f-chip').forEach(function(c) {
+      c.addEventListener('click', function() { newCard.metric = c.getAttribute('data-k'); renderSidebarStatics(); });
+    });
+    // 图表/对比
+    document.getElementById('c-chart').value = newCard.chart;
+    var d2sel = document.getElementById('c-dim2');
+    d2sel.innerHTML = '<option value="">无</option>' + DIM_KEYS.filter(function(k) { return k !== 'year'; })
+      .map(function(k) { return '<option value="' + k + '">' + DIMS[k].label + '</option>'; }).join('');
+    d2sel.value = newCard.dim2;
+  }
+  function renderStatusChips() {
+    document.getElementById('g-status-chips').innerHTML = S.STATUS_ORDER.map(function(st) {
+      return '<span class="st-chip' + (G.status.indexOf(st) >= 0 ? ' on' : '') + '" data-st="' + st + '">' +
+        '<span class="dot" style="background:' + S.STATUS_COLOR[st] + '"></span>' + st + '</span>';
+    }).join('');
+    document.querySelectorAll('#g-status-chips .st-chip').forEach(function(c) {
+      c.addEventListener('click', function() {
+        var st = c.getAttribute('data-st');
+        var i = G.status.indexOf(st);
+        if (i >= 0) G.status.splice(i, 1); else G.status.push(st);
+        renderStatusChips(); refreshAll();
+      });
+    });
+  }
+  function renderSaved() {
+    var list = getSaved();
+    var el = document.getElementById('saved-list');
+    if (!list.length) { el.innerHTML = '<div class="saved-empty">还没有保存的分析。配好画布后点顶部「保存画布」。</div>'; return; }
+    el.innerHTML = '';
+    list.forEach(function(sv, i) {
+      var d = document.createElement('div');
+      d.className = 'saved-item';
+      d.innerHTML = '<div><div class="s-name">' + S.esc(sv.name) + '</div><div class="s-time">' + sv.ts + ' · ' + sv.state.cards.length + ' 张卡片</div></div><button class="s-del" title="删除">✕</button>';
+      d.addEventListener('click', function() { loadState(sv.state); toast('已载入「' + sv.name + '」'); });
+      d.querySelector('.s-del').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var l = getSaved(); l.splice(i, 1); localStorage.setItem('gogpt_saved_v2', JSON.stringify(l));
+        renderSaved();
+      });
+      el.appendChild(d);
+    });
+  }
+  function getSaved() { try { return JSON.parse(localStorage.getItem('gogpt_saved_v2') || '[]'); } catch (e) { return []; } }
+
+  /* ================= 模板库 ================= */
+  var TEMPLATES = [
+    { key: 'overview', name: '全球概览', desc: '状态/大区/国家/燃料四张图',
+      g: {}, cards: [
+        { dim: 'status', metric: 'cap', chart: 'pie' },
+        { dim: 'country', metric: 'cap', chart: 'bar_v', topn: 10, full: true },
+        { dim: 'region', metric: 'cap', chart: 'bar_v' },
+        { dim: 'fuel', metric: 'cap', chart: 'treemap' } ] },
+    { key: 'country', name: '国家深读', desc: 'Top15国家 + 国家×状态矩阵 + 业主',
+      g: {}, cards: [
+        { dim: 'country', metric: 'cap', chart: 'bar_v', topn: 15, full: true },
+        { dim: 'country', metric: 'cap', chart: 'heatmap', dim2: 'status', full: true },
+        { dim: 'owner', metric: 'cap', chart: 'bar_h', topn: 10 } ] },
+    { key: 'pipeline', name: '开发管线', desc: '只看在建+前期+已宣布',
+      g: { status: ['在建', '前期开发', '已宣布'] }, cards: [
+        { dim: 'country', metric: 'cap', chart: 'bar_v', topn: 15, full: true },
+        { dim: 'status', metric: 'units', chart: 'pie' },
+        { dim: 'region', metric: 'cap', chart: 'bar_v' } ] },
+    { key: 'owner', name: '业主格局', desc: 'Top20业主 + 业主×燃料 + 规模象限',
+      g: {}, cards: [
+        { dim: 'owner', metric: 'cap', chart: 'bar_h', topn: 20, full: true },
+        { dim: 'owner', metric: 'cap', chart: 'heatmap', dim2: 'fuel', full: true },
+        { dim: 'owner', metric: 'cap', chart: 'scatter', topn: 0 } ] },
+    { key: 'fuel', name: '燃料结构', desc: '燃料构成与区域分布',
+      g: {}, cards: [
+        { dim: 'fuel', metric: 'cap', chart: 'pie' },
+        { dim: 'fuel', metric: 'cap', chart: 'heatmap', dim2: 'region', full: true },
+        { dim: 'fuel', metric: 'units', chart: 'treemap' } ] },
+    { key: 'history', name: '投运年代史', desc: '历年投运与年代×燃料',
+      g: {}, cards: [
+        { dim: 'year', metric: 'cap', chart: 'line', full: true },
+        { dim: 'decade', metric: 'cap', chart: 'bar_v', dim2: 'fuel', full: true },
+        { dim: 'decade', metric: 'units', chart: 'bar_v' } ] },
+    { key: 'size', name: '机组规模', desc: '单机容量分档与象限',
+      g: {}, cards: [
+        { dim: 'capbin', metric: 'units', chart: 'bar_v' },
+        { dim: 'country', metric: 'cap', chart: 'scatter', topn: 0, full: true },
+        { dim: 'capbin', metric: 'cap', chart: 'heatmap', dim2: 'status', full: true } ] },
+    { key: 'region', name: '区域对比', desc: '五大区结构与燃料构成',
+      g: {}, cards: [
+        { dim: 'region', metric: 'cap', chart: 'bar_v', dim2: 'status', full: true },
+        { dim: 'region', metric: 'cap', chart: 'heatmap', dim2: 'fuel', full: true },
+        { dim: 'region', metric: 'plants', chart: 'pie' } ] }
+  ];
+  function renderTemplates() {
+    document.getElementById('tmpl-list').innerHTML = TEMPLATES.map(function(t) {
+      return '<div class="tmpl-item" data-k="' + t.key + '"><div><div class="t-name">' + t.name + '</div><div class="t-desc">' + t.desc + '</div></div><span style="color:var(--accent);font-size:0.8rem">载入</span></div>';
+    }).join('');
+    document.querySelectorAll('.tmpl-item').forEach(function(el) {
+      el.addEventListener('click', function() {
+        var t = TEMPLATES.filter(function(x) { return x.key === el.getAttribute('data-k'); })[0];
+        loadTemplate(t);
+        toast('已载入模板「' + t.name + '」');
+      });
+    });
+  }
+  function loadTemplate(t) {
+    G = { region: '', status: (t.g.status || []).slice(), fuel: '', country: '', kw: '', topn: G.topn };
+    syncFilterUI();
+    cards = t.cards.map(function(c) {
+      return { id: uid++, dim: c.dim, metric: c.metric, chart: c.chart, dim2: c.dim2 || '', topn: c.topn != null ? c.topn : 15, drill: [], full: !!c.full };
+    });
+    setMode('canvas');
+    refreshAll();
+    persistLast();
+  }
+
+  /* ================= 统计条 ================= */
+  function renderStats() {
+    var rows = applyG(RAW);
+    var plants = {}, countries = {};
+    rows.forEach(function(r) { plants[r[0]] = 1; countries[r[2]] = 1; });
+    var cap = S.sumCap(rows) / 1000;
+    var opCap = S.sumCap(rows.filter(function(r) { return r[4] === '在运'; })) / 1000;
+    var avg = rows.length ? S.sumCap(rows) / rows.length : 0;
+    var items = [
+      ['机组', rows.length.toLocaleString() + ' 台'],
+      ['电厂', Object.keys(plants).length.toLocaleString() + ' 座'],
+      ['总装机', cap.toFixed(1) + ' GW'],
+      ['平均单机', avg.toFixed(0) + ' MW'],
+      ['在运占比', cap ? (opCap / cap * 100).toFixed(0) + '%' : '—'],
+      ['国家/地区', Object.keys(countries).length]
+    ];
+    document.getElementById('stats-bar').innerHTML = items.map(function(it) {
+      return '<div class="stat-item"><span class="sl">' + it[0] + '</span><span class="sv">' + it[1] + '</span></div>';
+    }).join('') + '<div style="margin-left:auto;font-size:0.72rem;color:var(--faint)">全局筛选实时生效于所有卡片与透视表</div>';
+    document.getElementById('g-filter-hint').textContent = rows.length === RAW.length ? '' : '生效中';
+  }
+
+  /* ================= 透视表 ================= */
+  var pivotData = null;
+  function renderPivot() {
+    var rowSel = document.getElementById('p-row'), colSel = document.getElementById('p-col');
+    if (!rowSel.options.length) {
+      rowSel.innerHTML = DIM_KEYS.map(function(k) { return '<option value="' + k + '">' + DIMS[k].label + '</option>'; }).join('');
+      colSel.innerHTML = DIM_KEYS.map(function(k) { return '<option value="' + k + '">' + DIMS[k].label + '</option>'; }).join('');
+      rowSel.value = pivot.row; colSel.value = pivot.col;
+      document.getElementById('p-metric').value = pivot.metric;
+    }
+    var rows = applyG(RAW);
+    var rd = DIMS[pivot.row], cd = DIMS[pivot.col];
+    function topKeys(d, n) {
+      var m = {};
+      rows.forEach(function(r) { var k = d.key(r); if (k != null) m[k] = (m[k] || 0) + r[6]; });
+      var keys = Object.keys(m);
+      if (d.order === 'num') return keys.sort(function(a, b) { return a - b; });
+      if (Array.isArray(d.order)) return keys.sort(function(a, b) { return d.order.indexOf(a) - d.order.indexOf(b); });
+      return keys.sort(function(a, b) { return m[b] - m[a]; }).slice(0, n);
+    }
+    var rk = topKeys(rd, 12), ck = topKeys(cd, 9);
+    function agg(rk2, ck2) {
+      var cap = 0, units = 0, pl = {};
+      rows.forEach(function(r) {
+        var a = rd.key(r), b = cd.key(r);
+        if (a === rk2 && b === ck2) { cap += r[6]; units++; pl[r[0]] = 1; }
+      });
+      return { cap: cap / 1000, units: units, plants: Object.keys(pl).length };
+    }
+    var cells = {}, rowTot = {}, colTot = {}, grand = { cap: 0, units: 0, pl: {} };
+    rk.forEach(function(a) {
+      ck.forEach(function(b) {
+        var v = agg(a, b);
+        cells[a + '||' + b] = v;
+        rowTot[a] = rowTot[a] || { cap: 0, units: 0, pl: {} };
+        rowTot[a].cap += v.cap; rowTot[a].units += v.units;
+        colTot[b] = colTot[b] || { cap: 0, units: 0, pl: {} };
+        colTot[b].cap += v.cap; colTot[b].units += v.units;
+        grand.cap += v.cap; grand.units += v.units;
+        Object.keys(v).forEach(function() {});
+        rows.forEach(function(r) { if (rd.key(r) === a && cd.key(r) === b) grand.pl[r[0]] = 1; });
+      });
+    });
+    var maxV = 0;
+    rk.forEach(function(a) { ck.forEach(function(b) { maxV = Math.max(maxV, metricOf(cells[a + '||' + b], pivot.metric)); }); });
+    function cellStyle(v) {
+      var al = maxV ? (0.04 + 0.72 * v / maxV) : 0.04;
+      return 'background:rgba(14,124,111,' + al.toFixed(2) + ');' + (al > 0.45 ? 'color:#fff;' : '');
+    }
+    var html = '<table class="pivot-table"><thead><tr><th>' + rd.label + ' \\ ' + cd.label + '</th>' +
+      ck.map(function(b) { return '<th>' + S.esc(cd.disp(b)) + '</th>'; }).join('') + '<th>合计</th></tr></thead><tbody>';
+    rk.forEach(function(a) {
+      html += '<tr><th>' + S.esc(rd.disp(a)) + '</th>';
+      ck.forEach(function(b) {
+        var v = cells[a + '||' + b];
+        html += '<td class="cell" data-r="' + S.esc(String(a)) + '" data-c="' + S.esc(String(b)) + '" style="' + cellStyle(metricOf(v, pivot.metric)) + '">' + (v.units ? fmtVal(pivot.metric, metricOf(v, pivot.metric)) : '·') + '</td>';
+      });
+      html += '<td class="tot">' + fmtVal(pivot.metric, metricOf(rowTot[a], pivot.metric)) + '</td></tr>';
+    });
+    html += '<tr class="tot"><th>合计</th>' + ck.map(function(b) {
+      var t = colTot[b] || { cap: 0, units: 0, plants: 0 };
+      return '<td class="tot">' + fmtVal(pivot.metric, metricOf(t, pivot.metric)) + '</td>';
+    }).join('') + '<td class="tot">' + fmtVal(pivot.metric, metricOf(grand, pivot.metric)) + '</td></tr>';
+    html += '</tbody></table>';
+    document.getElementById('pivot-wrap').innerHTML = html;
+    pivotData = { rk: rk, ck: ck, rd: rd, cd: cd };
+    document.querySelectorAll('#pivot-wrap td.cell').forEach(function(td) {
+      td.addEventListener('click', function() {
+        var a = td.getAttribute('data-r'), b = td.getAttribute('data-c');
+        openDetail(rd.disp(a) + ' × ' + cd.disp(b), [{ dim: pivot.row, value: a }, { dim: pivot.col, value: b }]);
+      });
+    });
+  }
+  ['p-row', 'p-col', 'p-metric'].forEach(function(id) {
+    document.getElementById(id).addEventListener('change', function() {
+      pivot.row = document.getElementById('p-row').value;
+      pivot.col = document.getElementById('p-col').value;
+      pivot.metric = document.getElementById('p-metric').value;
+      if (pivot.row === pivot.col) { toast('行/列维度相同没有意义，请换一个'); return; }
+      renderPivot();
+    });
+  });
+  document.getElementById('p-export').addEventListener('click', function() {
+    if (!pivotData) return;
+    var lines = [DIMS[pivot.row].label + ',' + DIMS[pivot.col].label + ',' + METRICS[pivot.metric].label];
+    pivotData.rk.forEach(function(a) {
+      pivotData.ck.forEach(function(b) {
+        var rows = applyG(RAW).filter(function(r) { return pivotData.rd.key(r) === a && pivotData.cd.key(r) === b; });
+        if (rows.length) lines.push('"' + pivotData.rd.disp(a) + '","' + pivotData.cd.disp(b) + '",' + fmtVal(pivot.metric, metricOf({ cap: S.sumCap(rows) / 1000, units: rows.length, plants: 0 }, pivot.metric)));
+      });
+    });
+    download('透视表-' + DIMS[pivot.row].label + 'x' + DIMS[pivot.col].label + '.csv', '﻿' + lines.join('\n'), 'text/csv;charset=utf-8');
+  });
+
+  /* ================= 模式切换 ================= */
+  function setMode(m) {
+    mode = m;
+    document.getElementById('tab-canvas').classList.toggle('on', m === 'canvas');
+    document.getElementById('tab-pivot').classList.toggle('on', m === 'pivot');
+    document.getElementById('mode-canvas').style.display = m === 'canvas' ? '' : 'none';
+    document.getElementById('mode-pivot').style.display = m === 'pivot' ? '' : 'none';
+    if (m === 'pivot') renderPivot(); else renderCards();
+  }
+  document.getElementById('tab-canvas').addEventListener('click', function() { setMode('canvas'); });
+  document.getElementById('tab-pivot').addEventListener('click', function() { setMode('pivot'); });
+
+  /* ================= 保存 / 分享 / 序列化 ================= */
+  function serialize() {
+    return {
+      g: { region: G.region, status: G.status, fuel: G.fuel, country: G.country, kw: G.kw, topn: G.topn },
+      cards: cards.map(function(c) { return { dim: c.dim, metric: c.metric, chart: c.chart, dim2: c.dim2, topn: c.topn, drill: c.drill, full: !!c.full }; }),
+      pivot: pivot
+    };
+  }
+  function loadState(st) {
+    G = { region: st.g.region || '', status: (st.g.status || []).slice(), fuel: st.g.fuel || '', country: st.g.country || '', kw: st.g.kw || '', topn: st.g.topn || 15 };
+    cards = (st.cards || []).map(function(c) { return { id: uid++, dim: c.dim, metric: c.metric, chart: c.chart, dim2: c.dim2 || '', topn: c.topn != null ? c.topn : 15, drill: (c.drill || []).slice(), full: !!c.full }; });
+    if (st.pivot) pivot = { row: st.pivot.row || 'country', col: st.pivot.col || 'status', metric: st.pivot.metric || 'cap' };
+    syncFilterUI();
+    setMode('canvas');
+    refreshAll();
+  }
+  var persistT;
+  function persistLast() {
+    clearTimeout(persistT);
+    persistT = setTimeout(function() {
+      try { localStorage.setItem('gogpt_last_v2', JSON.stringify(serialize())); } catch (e) {}
+    }, 400);
+  }
+  document.getElementById('btn-save').addEventListener('click', function() {
+    var name = prompt('给这套分析起个名字：', '我的分析 ' + new Date().toLocaleDateString('zh-CN'));
+    if (!name) return;
+    var l = getSaved();
+    l.unshift({ name: name, ts: new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }), state: serialize() });
+    localStorage.setItem('gogpt_saved_v2', JSON.stringify(l.slice(0, 20)));
+    renderSaved();
+    toast('已保存「' + name + '」');
+  });
+  document.getElementById('btn-share').addEventListener('click', function() {
+    location.hash = 's=' + b64enc(JSON.stringify(serialize()));
+    var url = location.href;
+    if (navigator.clipboard) navigator.clipboard.writeText(url);
+    toast('链接已复制，发给同事即可打开同样的画布');
+  });
+  document.getElementById('btn-clear').addEventListener('click', function() {
+    cards = []; renderCards(); persistLast();
+  });
+
+  /* ================= 报告 v2 ================= */
+  function blocksToMd(blocks) {
+    return blocks.map(function(b) {
+      if (b.t === 'h1') return '# ' + b.v;
+      if (b.t === 'h2') return '## ' + b.v;
+      if (b.t === 'h4') return '#### ' + b.v;
+      if (b.t === 'p') return b.v;
+      if (b.t === 'ul') return b.items.map(function(i) { return '- ' + i; }).join('\n');
+      if (b.t === 'table') return null; // md 中表格单独拼
+      if (b.t === 'meta') return '> ' + b.v;
+      return '';
+    }).filter(function(x) { return x !== null; }).join('\n\n');
+  }
+  function buildReport() {
+    var blocks = [];
+    var rows = applyG(RAW);
+    var today = new Date().toISOString().slice(0, 10);
+    blocks.push({ t: 'h1', v: '全球油气电厂数据分析报告' });
+    blocks.push({ t: 'meta', v: '数据：Global Energy Monitor GOGPT ' + S.VERSION + ' · 生成：' + today + ' · GOGPT 数据观察站分析工具' });
+    blocks.push({ t: 'h2', v: '一、分析范围' });
+    var fd = [];
+    if (G.region) fd.push('大区=' + G.region);
+    if (G.status.length) fd.push('状态=' + G.status.join('/'));
+    if (G.fuel) fd.push('燃料=' + G.fuel);
+    if (G.country) fd.push('国家≈' + G.country);
+    if (G.kw) fd.push('关键词≈' + G.kw);
+    var plants = {}, countries = {};
+    rows.forEach(function(r) { plants[r[0]] = 1; countries[r[2]] = 1; });
+    blocks.push({ t: 'ul', items: [
+      '筛选条件：' + (fd.length ? fd.join('，') : '无（全量数据）'),
+      '覆盖：' + rows.length.toLocaleString() + ' 台机组 / ' + Object.keys(plants).length.toLocaleString() + ' 座电厂 / ' + Object.keys(countries).length + ' 个国家/地区',
+      '总装机：' + (S.sumCap(rows) / 1000).toFixed(1) + ' GW',
+      '本报告由 ' + cards.length + ' 张分析卡片组成' ]});
+    cards.forEach(function(card, ci) {
+      var crows = cardRows(card);
+      var groups = aggregate(crows, card.dim, card.topn != null ? card.topn : G.topn);
+      var st = cardStats(groups, card.metric);
+      var total = groups.reduce(function(s, g) { return s + metricOf(g, card.metric); }, 0) || 1;
+      blocks.push({ t: 'h2', v: (ci + 2) + '、' + cardTitle(card) });
+      blocks.push({ t: 'p', v: '基于 ' + crows.length.toLocaleString() + ' 台机组，共 ' + groups.length + ' 组；集中度 CR3 ' + st.cr3.toFixed(1) + '%、CR10 ' + st.cr10.toFixed(1) + '%、HHI ' + st.hhi + (st.hhi > 2500 ? '（高度集中）' : (st.hhi > 1500 ? '（中等集中）' : '（较为分散）')) + '。' });
+      if (groups.length) {
+        var g0 = groups[0], g1 = groups[1];
+        if (g0 && g1 && g0.key !== '__other') blocks.push({ t: 'p', v: '首位为 **' + g0.disp + '**（' + fmtVal(card.metric, metricOf(g0, card.metric)) + '，占 ' + (metricOf(g0, card.metric) / total * 100).toFixed(1) + '%），为第二名 ' + g1.disp + ' 的 ' + (metricOf(g0, card.metric) / Math.max(metricOf(g1, card.metric), 0.001)).toFixed(1) + ' 倍。' });
+      }
+      blocks.push({ t: 'table', v: groups.slice(0, 8).map(function(g) {
+        return [g.disp, g.cap.toFixed(1), g.units.toLocaleString(), g.plants.toLocaleString(), (metricOf(g, card.metric) / total * 100).toFixed(1) + '%'];
+      }), head: [DIMS[card.dim].label, '装机GW', '机组', '电厂', '占比'] });
+      blocks.push({ t: 'img', cardId: card.id });
+    });
+    blocks.push({ t: 'p', v: '---' });
+    blocks.push({ t: 'meta', v: '本报告由 GOGPT 数据观察站分析工具自动生成，数据以 Global Energy Monitor 官方发布为准（CC BY 4.0）。' });
+    return blocks;
+  }
+  function blocksToHtml(blocks, withImages) {
+    function inline(t) { return String(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+    var html = '';
+    blocks.forEach(function(b) {
+      if (b.t === 'h1') html += '<h2>' + inline(b.v) + '</h2>';
+      else if (b.t === 'h2') html += '<h4>' + inline(b.v) + '</h4>';
+      else if (b.t === 'meta') html += '<p class="rp-meta">' + inline(b.v) + '</p>';
+      else if (b.t === 'p') html += '<p>' + inline(b.v).replace(/^---$/, '<hr>') + '</p>';
+      else if (b.t === 'ul') html += '<ul>' + b.items.map(function(i) { return '<li>' + inline(i) + '</li>'; }).join('') + '</ul>';
+      else if (b.t === 'table') {
+        html += '<table><thead><tr>' + b.head.map(function(h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+          b.v.map(function(r) { return '<tr>' + r.map(function(c, i) { return '<' + (i ? 'td' : 'td') + (i ? ' style="text-align:right;font-family:GeistMono,monospace"' : '') + '>' + c + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+      } else if (b.t === 'img' && withImages) {
+        var inst = chartMap[b.cardId];
+        if (inst) {
+          try { html += '<img class="rp-chart-img" src="' + inst.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' }) + '" alt="图表">'; } catch (e) {}
+        }
+      }
+    });
+    return html;
+  }
+  function blocksToMdFull(blocks) {
+    var out = [];
+    blocks.forEach(function(b) {
+      if (b.t === 'h1') out.push('# ' + b.v);
+      else if (b.t === 'h2') out.push('## ' + b.v);
+      else if (b.t === 'h4') out.push('#### ' + b.v);
+      else if (b.t === 'meta') out.push('> ' + b.v);
+      else if (b.t === 'p') out.push(b.v);
+      else if (b.t === 'ul') out.push(b.items.map(function(i) { return '- ' + i; }).join('\n'));
+      else if (b.t === 'table') {
+        out.push('| ' + b.head.join(' | ') + ' |');
+        out.push('|' + b.head.map(function() { return '---'; }).join('|') + '|');
+        b.v.forEach(function(r) { out.push('| ' + r.join(' | ') + ' |'); });
+      }
+      else if (b.t === 'img') out.push('*（图表见 HTML 版报告）*');
+    });
+    return out.join('\n\n');
+  }
+  var lastBlocks = null;
+  document.getElementById('btn-report').addEventListener('click', function() {
+    if (!cards.length) { toast('画布是空的，先添加分析卡片'); return; }
+    lastBlocks = buildReport();
+    document.getElementById('report-body').innerHTML = blocksToHtml(lastBlocks, true);
+    var panel = document.getElementById('report-panel');
+    panel.classList.add('show');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.getElementById('rp-copy').addEventListener('click', function() {
+    if (!lastBlocks) return;
+    navigator.clipboard.writeText(blocksToMdFull(lastBlocks)).then(function() {
+      var b = document.getElementById('rp-copy');
+      b.textContent = '已复制 ✓'; setTimeout(function() { b.textContent = '复制 Markdown'; }, 1500);
+    });
+  });
   document.getElementById('rp-md').addEventListener('click', function() {
-    if (!lastReport) return;
-    download(lastReport.title + '.md', '﻿' + lastReport.md, 'text/markdown;charset=utf-8');
+    if (!lastBlocks) return;
+    download('全球油气电厂数据分析报告.md', '﻿' + blocksToMdFull(lastBlocks), 'text/markdown;charset=utf-8');
   });
   document.getElementById('rp-html').addEventListener('click', function() {
-    if (!lastReport) return;
-    var img = '';
-    try { img = chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#ffffff' }); } catch (e) {}
-    var body = mdToHtml(lastReport.md);
-    var marker = '<h4>三、';
-    var idx = body.indexOf(marker);
-    if (img && idx > 0) {
-      var endH = body.indexOf('</h4>', idx);
-      body = body.slice(0, endH + 5) + '<img style="max-width:100%;border:1px solid #e7e4dc;border-radius:10px;margin:8px 0 14px" src="' + img + '">' + body.slice(endH + 5);
-    }
-    var html = '<!-- Generated by Trae Work --><!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">' +
-      '<title>' + lastReport.title + '</title><style>' +
+    if (!lastBlocks) return;
+    var body = blocksToHtml(lastBlocks, true);
+    var html = '<!-- Generated by Trae Work --><!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>全球油气电厂数据分析报告</title><style>' +
       'body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;max-width:52rem;margin:2rem auto;padding:0 1.2rem;color:#1b2430;line-height:1.7}' +
       'h2{font-size:1.5rem;font-weight:800;margin:1.6rem 0 .7rem}h4{font-size:1.1rem;font-weight:700;margin:1.3rem 0 .5rem}' +
-      'p{font-size:.92rem;color:#4a5568;margin-bottom:.55rem}p b,li b{color:#1b2430}' +
-      'ul{padding-left:1.2rem}li{font-size:.92rem;color:#4a5568;margin-bottom:.3rem}' +
+      'p{font-size:.92rem;color:#4a5568;margin-bottom:.55rem}p b,li b{color:#1b2430}ul{padding-left:1.2rem}li{font-size:.92rem;color:#4a5568;margin-bottom:.3rem}' +
       'table{width:100%;border-collapse:collapse;font-size:.85rem;margin:.6rem 0 1rem}th,td{border:1px solid #e7e4dc;padding:.4rem .6rem;text-align:left}th{background:#faf9f5}' +
-      '.rp-meta{font-size:.78rem;color:#9aa3b2}hr{border:none;border-top:1px solid #e7e4dc;margin:1rem 0}</style></head><body>' + body + '</body></html>';
-    download(lastReport.title + '.html', html, 'text/html;charset=utf-8');
+      '.rp-meta{font-size:.78rem;color:#9aa3b2}img{max-width:100%;border:1px solid #e7e4dc;border-radius:10px;margin:8px 0 14px}</style></head><body>' + body + '</body></html>';
+    download('全球油气电厂数据分析报告.html', html, 'text/html;charset=utf-8');
   });
 
-  // ===== 事件绑定 =====
-  var deb = S.debounce(refresh, 250);
-  document.getElementById('f-region').addEventListener('change', function() { state.region = this.value; refresh(); });
-  document.getElementById('f-status').addEventListener('change', function() { state.status = this.value; refresh(); });
-  document.getElementById('f-fuel').addEventListener('change', function() { state.fuel = this.value; refresh(); });
-  document.getElementById('f-country').addEventListener('input', function() { state.country = this.value; deb(); });
-  document.getElementById('f-keyword').addEventListener('input', function() { state.kw = this.value; deb(); });
-  document.getElementById('f-reset').addEventListener('click', function() {
-    state.region = ''; state.status = ''; state.fuel = ''; state.country = ''; state.kw = '';
-    ['f-region', 'f-status', 'f-fuel'].forEach(function(id) { document.getElementById(id).value = ''; });
-    document.getElementById('f-country').value = '';
-    document.getElementById('f-keyword').value = '';
-    refresh();
-  });
-  document.getElementById('w-dim').addEventListener('change', function() { state.dim = this.value; refresh(); });
-  document.getElementById('w-metric').addEventListener('change', function() { state.metric = this.value; refresh(); });
-  document.getElementById('w-chart').addEventListener('change', function() { state.chart = this.value; refresh(); });
-  document.getElementById('w-dim2').addEventListener('change', function() { state.dim2 = this.value; refresh(); });
-  document.getElementById('w-topn').addEventListener('change', function() { state.topn = +this.value; refresh(); });
+  /* ================= 全局刷新与初始化 ================= */
+  function refreshAll() {
+    renderStats();
+    if (mode === 'canvas') renderCards(); else renderPivot();
+    persistLast();
+  }
+  function syncFilterUI() {
+    var regions = [], fuels = [];
+    RAW.forEach(function(r) {
+      if (regions.indexOf(r[3]) < 0) regions.push(r[3]);
+      if (fuels.indexOf(r[5]) < 0) fuels.push(r[5]);
+    });
+    var rSel = document.getElementById('g-region');
+    if (!rSel.options.length) {
+      rSel.innerHTML = '<option value="">全部</option>' + regions.sort().map(function(v) { return '<option value="' + v + '">' + v + '</option>'; }).join('');
+      var fSel = document.getElementById('g-fuel');
+      fSel.innerHTML = '<option value="">全部</option>' + S.FUEL_ORDER.filter(function(f) { return fuels.indexOf(f) >= 0; }).map(function(v) { return '<option value="' + v + '">' + v + '</option>'; }).join('');
+    }
+    rSel.value = G.region;
+    document.getElementById('g-fuel').value = G.fuel;
+    document.getElementById('g-topn').value = String(G.topn);
+    document.getElementById('g-country').value = G.country;
+    document.getElementById('g-kw').value = G.kw;
+    renderStatusChips();
+  }
 
-  refresh();
+  // 事件绑定
+  document.getElementById('g-region').addEventListener('change', function() { G.region = this.value; refreshAll(); });
+  document.getElementById('g-fuel').addEventListener('change', function() { G.fuel = this.value; refreshAll(); });
+  document.getElementById('g-topn').addEventListener('change', function() { G.topn = +this.value; refreshAll(); });
+  var debG = S.debounce(refreshAll, 280);
+  document.getElementById('g-country').addEventListener('input', function() { G.country = this.value; debG(); });
+  document.getElementById('g-kw').addEventListener('input', function() { G.kw = this.value; debG(); });
+  document.getElementById('g-reset').addEventListener('click', function() {
+    G = { region: '', status: [], fuel: '', country: '', kw: '', topn: G.topn };
+    syncFilterUI(); refreshAll();
+  });
+  document.getElementById('c-chart').addEventListener('change', function() { newCard.chart = this.value; });
+  document.getElementById('c-dim2').addEventListener('change', function() { newCard.dim2 = this.value; });
+  document.getElementById('c-add').addEventListener('click', function() {
+    cards.push({ id: uid++, dim: newCard.dim, metric: newCard.metric, chart: newCard.chart, dim2: newCard.dim2, topn: G.topn, drill: [], full: false });
+    setMode('canvas');
+    refreshAll();
+    var els = document.querySelectorAll('.ana-card');
+    if (els.length) els[els.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  window.addEventListener('resize', S.debounce(function() {
+    Object.keys(chartMap).forEach(function(id) { chartMap[id].resize(); });
+  }, 200));
+
+  // 初始化：分享链接 > 上次画布 > 默认模板 > 旧版 ?dim= 链接
+  renderTemplates(); renderSaved(); renderSidebarStatics(); syncFilterUI();
+  var booted = false;
+  if (location.hash.indexOf('#s=') === 0) {
+    try { loadState(JSON.parse(b64dec(location.hash.slice(3)))); booted = true; } catch (e) {}
+  }
+  if (!booted) {
+    var last = null;
+    try { last = JSON.parse(localStorage.getItem('gogpt_last_v2') || 'null'); } catch (e) {}
+    if (last && last.cards && last.cards.length) { loadState(last); booted = true; }
+  }
+  if (!booted && qs.get('dim')) {
+    var sts = qs.get('status');
+    if (sts) G.status = sts.split(',');
+    cards = [{ id: uid++, dim: qs.get('dim'), metric: qs.get('metric') || 'cap', chart: 'auto', dim2: '', topn: 15, drill: [], full: true }];
+    syncFilterUI(); refreshAll(); booted = true;
+  }
+  if (!booted) loadTemplate(TEMPLATES[0]);
 })();
 </script>
 </body>
