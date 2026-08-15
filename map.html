@@ -5,57 +5,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全球地图 · GOGPT 数据观察站</title>
-<meta name="description" content="全球 13,895 台油气发电机组逐一上图：按状态着色、按容量定大小，支持搜索定位、排行联动与全屏浏览。">
-<link rel="stylesheet" href="assets/layout.css?v=3">
+<meta name="description" content="全球 13,895 台油气发电机组逐一上图：按状态着色、按容量定大小，支持国家搜索定位、多维多选筛选与全屏浏览。">
+<link rel="stylesheet" href="assets/layout.css?v=4">
 </head>
 <body>
 <div class="wrap" style="padding-top:1.2rem">
 
-<div class="map-tb">
-  <div class="map-title">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-    全球机组地图
-  </div>
-  <div class="chips" id="status-chips"></div>
-  <span style="flex:1"></span>
-  <select id="f-region" class="map-select"><option value="">全部大区</option></select>
-  <select id="f-fuel" class="map-select"><option value="">全部燃料</option></select>
+<div class="map-topbar">
   <div class="map-search">
-    <span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+    <span class="ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
     <input type="text" id="cty-search" placeholder="搜索国家定位（中/英）…" autocomplete="off">
     <div class="map-sug" id="cty-sug"></div>
   </div>
-  <button class="reset" id="f-reset" style="background:transparent;color:var(--muted);border:1px dashed var(--rule);border-radius:8px;padding:0.4rem 0.85rem;font-size:0.8rem;cursor:pointer">重置</button>
+  <div class="map-drops">
+    <div class="msel" id="ms-status"></div>
+    <div class="msel" id="ms-region"></div>
+    <div class="msel" id="ms-fuel"></div>
+    <span class="drop-spring"></span>
+    <button class="ms-reset" id="f-reset">重置</button>
+  </div>
 </div>
 
-<div class="map-kpis" id="map-kpis"></div>
-
-<div class="map-layout">
-  <div class="map-panel" id="map-panel">
-    <div id="chart-map"></div>
-    <div class="map-ctl">
-      <button id="btn-home" title="复位视角"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></button>
-      <button id="btn-fs" title="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
-    </div>
-    <div class="detail-card" id="detail-card">
-      <button class="dc-close" id="dc-close">×</button>
-      <h4 id="dc-name"></h4>
-      <div class="dc-sub" id="dc-sub"></div>
-      <div class="dc-grid" id="dc-grid"></div>
-      <a class="dc-link" id="dc-link" target="_blank" rel="noopener" style="display:none">GEM Wiki 详情 →</a>
-    </div>
+<div class="map-panel" id="map-panel">
+  <div id="chart-map"></div>
+  <div class="map-ctl">
+    <button id="btn-home" title="复位视角"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></button>
+    <button id="btn-fs" title="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   </div>
-  <aside class="side-panel">
-    <h3>国家/地区排行</h3>
-    <div class="sub" id="side-sub"></div>
-    <div class="seg" id="rank-seg">
-      <button data-m="cap" class="on">装机 GW</button>
-      <button data-m="units">机组数</button>
-      <button data-m="plants">电厂数</button>
-    </div>
-    <div id="rank-list"></div>
-    <div class="map-note">点击排行或搜索国家可在地图上定位；点大小对应装机容量，颜色对应状态；开发中项目带涟漪动效。滚轮/双指缩放，拖拽平移。</div>
-  </aside>
+  <div class="map-badge" id="map-badge"></div>
+  <div class="detail-card" id="detail-card">
+    <button class="dc-close" id="dc-close">×</button>
+    <h4 id="dc-name"></h4>
+    <div class="dc-sub" id="dc-sub"></div>
+    <div class="dc-grid" id="dc-grid"></div>
+    <a class="dc-link" id="dc-link" target="_blank" rel="noopener" style="display:none">GEM Wiki 详情 →</a>
+  </div>
 </div>
 
 </div>
@@ -69,12 +53,103 @@
   var S = window.SITE, RAW = window.GOGPT_DATA;
   var params = S.getParams();
   var state = {
-    statuses: params.status.length ? params.status.slice() : S.STATUS_ORDER.slice(),
-    region: params.region, fuel: params.fuel, country: params.country || '',
-    metric: 'cap'
+    statuses: params.status.filter(function(st) { return S.STATUS_ORDER.indexOf(st) >= 0; }),
+    regions: [], fuels: [], country: params.country || ''
   };
-  var DEF_VIEW = { center: [12, 22], zoom: 1.18 };
-  var curView = { center: DEF_VIEW.center.slice(), zoom: DEF_VIEW.zoom };
+
+  /* ===== 候选项 ===== */
+  var regionCnt = {}, fuelCnt = {};
+  RAW.forEach(function(r) {
+    regionCnt[r[3]] = (regionCnt[r[3]] || 0) + 1;
+    fuelCnt[r[5]] = (fuelCnt[r[5]] || 0) + 1;
+  });
+  var REGION_ITEMS = Object.keys(regionCnt).sort().map(function(v) { return { v: v, label: v, n: regionCnt[v] }; });
+  var FUEL_ITEMS = S.FUEL_ORDER.filter(function(f) { return fuelCnt[f]; }).map(function(f) { return { v: f, label: f, n: fuelCnt[f] }; });
+  var STATUS_ITEMS = S.STATUS_ORDER.map(function(st) { return { v: st, label: st, n: (S.filterRows(RAW, { status: [st] })).length, color: S.STATUS_COLOR[st] }; });
+  if (params.region) {
+    var rs = params.region.split(',').filter(function(v) { return regionCnt[v]; });
+    if (rs.length && rs.length !== REGION_ITEMS.length) state.regions = rs;
+  }
+  if (params.fuel) {
+    var fs = params.fuel.split(',').filter(function(v) { return fuelCnt[v]; });
+    if (fs.length && fs.length !== FUEL_ITEMS.length) state.fuels = fs;
+  }
+
+  /* ===== 多选下拉组件 ===== */
+  var CHEV = '<svg class="msel-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  var mselInstances = [];
+  function closeAllMsel() { mselInstances.forEach(function(m) { m.close(); }); }
+  function createMsel(mountId, title, items, initial, onChange) {
+    var root = document.getElementById(mountId);
+    var sel = initial.slice();
+    root.innerHTML =
+      '<button type="button" class="msel-btn"><span class="msel-t">' + title + '</span><span class="msel-sum"></span>' + CHEV + '</button>' +
+      '<div class="msel-panel"><div class="ms-list"></div>' +
+      '<div class="ms-foot"><button type="button" data-a="all">全选</button><span style="flex:1"></span><button type="button" data-a="clear">清空</button></div></div>';
+    var btn = root.querySelector('.msel-btn'), list = root.querySelector('.ms-list'), sum = root.querySelector('.msel-sum');
+    function isAll() { return sel.length === 0 || sel.length === items.length; }
+    function renderSum() {
+      if (isAll()) { sum.textContent = '全部'; root.classList.remove('has-sel'); return; }
+      var names = sel.map(function(v) {
+        for (var i = 0; i < items.length; i++) if (items[i].v === v) return items[i].label;
+        return v;
+      });
+      var t = names.slice(0, 2).join('、');
+      if (names.length > 2) t += ' +' + (names.length - 2);
+      sum.textContent = t; root.classList.add('has-sel');
+    }
+    function renderList() {
+      list.innerHTML = items.map(function(it) {
+        var on = sel.indexOf(it.v) >= 0;
+        return '<div class="ms-item' + (on ? ' on' : '') + '" data-v="' + S.esc(it.v) + '">' +
+          (it.color ? '<span class="ms-dot" style="--dot:' + it.color + '"></span>' : '') +
+          '<span class="ms-name">' + S.esc(it.label) + '</span>' +
+          '<span class="ms-n">' + it.n.toLocaleString() + '</span>' +
+          '<span class="ms-ck">' + CHECK + '</span></div>';
+      }).join('');
+      Array.prototype.forEach.call(list.querySelectorAll('.ms-item'), function(el) {
+        el.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var v = el.getAttribute('data-v'), i = sel.indexOf(v);
+          if (i >= 0) sel.splice(i, 1); else sel.push(v);
+          renderList(); renderSum(); onChange(sel.slice());
+        });
+      });
+    }
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var open = root.classList.contains('open');
+      closeAllMsel();
+      if (!open) root.classList.add('open');
+    });
+    Array.prototype.forEach.call(root.querySelectorAll('.ms-foot button'), function(b) {
+      b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sel = b.getAttribute('data-a') === 'all' ? items.map(function(it) { return it.v; }) : [];
+        renderList(); renderSum(); onChange(sel.slice());
+      });
+    });
+    var api = {
+      get: function() { return sel.slice(); },
+      set: function(arr) { sel = arr.slice(); renderList(); renderSum(); },
+      close: function() { root.classList.remove('open'); }
+    };
+    mselInstances.push(api);
+    renderList(); renderSum();
+    return api;
+  }
+  var mStatus = createMsel('ms-status', '状态', STATUS_ITEMS, state.statuses, function(v) { state.statuses = v; applyFilter(); });
+  var mRegion = createMsel('ms-region', '大区', REGION_ITEMS, state.regions, function(v) { state.regions = v; applyFilter(); });
+  var mFuel = createMsel('ms-fuel', '燃料', FUEL_ITEMS, state.fuels, function(v) { state.fuels = v; applyFilter(); });
+  document.addEventListener('click', closeAllMsel);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAllMsel(); });
+  document.getElementById('f-reset').addEventListener('click', function() {
+    state = { statuses: [], regions: [], fuels: [], country: '' };
+    mStatus.set([]); mRegion.set([]); mFuel.set([]);
+    document.getElementById('cty-search').value = '';
+    homeView(); applyFilter();
+  });
 
   /* ===== 国家索引（搜索建议 + 定位） ===== */
   var CTY = {};
@@ -88,87 +163,13 @@
   function ctyView(en) {
     var c = CTY[en]; if (!c) return null;
     var span = function(a) { return Math.max.apply(null, a) - Math.min.apply(null, a); };
-    var sl = span(c.lngs), st = span(c.lats);
-    var s = Math.max(sl, st * 1.6);
+    var s = Math.max(span(c.lngs), span(c.lats) * 1.6);
     var zoom = s < 6 ? 7 : s < 14 ? 5.5 : s < 30 ? 4 : s < 60 ? 3 : 2.2;
     return {
       center: [(Math.min.apply(null, c.lngs) + Math.max.apply(null, c.lngs)) / 2,
                (Math.min.apply(null, c.lats) + Math.max.apply(null, c.lats)) / 2],
       zoom: zoom
     };
-  }
-
-  /* ===== 筛选控件 ===== */
-  var chipsEl = document.getElementById('status-chips');
-  var rfFiltered = RAW; // 仅大区/燃料（供 chips 计数，与状态筛选无关）
-  function baseFiltered() {
-    return RAW.filter(function(r) {
-      if (state.region && r[3] !== state.region) return false;
-      if (state.fuel && r[5] !== state.fuel) return false;
-      return true;
-    });
-  }
-  function renderChips() {
-    var cnt = {};
-    rfFiltered.forEach(function(r) { cnt[r[4]] = (cnt[r[4]] || 0) + 1; });
-    chipsEl.innerHTML = S.STATUS_ORDER.map(function(st) {
-      var on = state.statuses.indexOf(st) >= 0;
-      return '<span class="chip' + (on ? ' on' : '') + '" data-st="' + st + '">' +
-        '<span class="dot" style="--dot:' + S.STATUS_COLOR[st] + '"></span>' + st +
-        '<span class="n">' + (cnt[st] || 0).toLocaleString() + '</span></span>';
-    }).join('');
-    Array.prototype.forEach.call(chipsEl.querySelectorAll('.chip'), function(el) {
-      el.addEventListener('click', function() {
-        var st = el.getAttribute('data-st');
-        var i = state.statuses.indexOf(st);
-        if (i >= 0) { if (state.statuses.length > 1) state.statuses.splice(i, 1); }
-        else state.statuses.push(st);
-        applyFilter();
-      });
-    });
-  }
-  function fillSelect(id, values) {
-    var sel = document.getElementById(id);
-    values.forEach(function(v) {
-      var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
-    });
-  }
-  var regions = [], fuels = [];
-  RAW.forEach(function(r) {
-    if (regions.indexOf(r[3]) < 0) regions.push(r[3]);
-    if (fuels.indexOf(r[5]) < 0) fuels.push(r[5]);
-  });
-  fillSelect('f-region', regions.sort());
-  fillSelect('f-fuel', S.FUEL_ORDER.filter(function(f) { return fuels.indexOf(f) >= 0; }));
-  if (state.region) document.getElementById('f-region').value = state.region;
-  if (state.fuel) document.getElementById('f-fuel').value = state.fuel;
-  document.getElementById('f-region').addEventListener('change', function() { state.region = this.value; applyFilter(); });
-  document.getElementById('f-fuel').addEventListener('change', function() { state.fuel = this.value; applyFilter(); });
-  document.getElementById('f-reset').addEventListener('click', function() {
-    state = { statuses: S.STATUS_ORDER.slice(), region: '', fuel: '', country: '', metric: state.metric };
-    document.getElementById('f-region').value = '';
-    document.getElementById('f-fuel').value = '';
-    document.getElementById('cty-search').value = '';
-    homeView();
-    applyFilter();
-  });
-
-  /* ===== KPI ===== */
-  function renderKpis(rows) {
-    var plants = {}, ctrys = {}, cap = 0, opCap = 0;
-    rows.forEach(function(r) {
-      plants[r[0]] = 1; ctrys[r[2]] = 1; cap += r[6];
-      if (r[4] === '在运') opCap += r[6];
-    });
-    var items = [
-      ['机组', rows.length.toLocaleString(), '台'],
-      ['总装机', (cap / 1000).toFixed(1), 'GW'],
-      ['覆盖国家/地区', Object.keys(ctrys).length, ''],
-      ['在运装机占比', cap ? (opCap / cap * 100).toFixed(0) : '0', '%']
-    ];
-    document.getElementById('map-kpis').innerHTML = items.map(function(it) {
-      return '<div class="mkpi"><span class="ml">' + it[0] + '</span><span class="mv">' + it[1] + '</span>' + (it[2] ? '<span class="mu">' + it[2] + '</span>' : '') + '</div>';
-    }).join('');
   }
 
   /* ===== 地图 ===== */
@@ -178,29 +179,26 @@
   window.addEventListener('resize', function() { clearTimeout(resizeT); resizeT = setTimeout(function() { map.resize(); }, 120); });
   document.addEventListener('fullscreenchange', function() { setTimeout(function() { map.resize(); }, 80); });
   var filtered = RAW;
+  var DEF_VIEW = { center: [12, 22], zoom: 1.18 };
+  var curView = { center: DEF_VIEW.center.slice(), zoom: DEF_VIEW.zoom };
 
   function renderMap() {
-    var series = S.STATUS_ORDER.filter(function(st) { return state.statuses.indexOf(st) >= 0; })
-      .map(function(st) {
-        var pts = [];
-        filtered.forEach(function(r) {
-          if (r[4] === st && r[7] && r[8]) pts.push({ name: r[0], value: [r[8], r[7], r[6]], row: r });
-        });
-        pts.sort(function(a, b) { return a.value[2] - b.value[2]; }); // 小点先渲染，大点在上层
-        var isDev = S.DEV_STATUSES.indexOf(st) >= 0;
-        var base = {
-          name: st, type: isDev ? 'effectScatter' : 'scatter', coordinateSystem: 'geo', data: pts,
-          symbolSize: function(v) { return Math.max(3, Math.min(28, Math.sqrt(v[2]) / 2.2)); },
-          itemStyle: { color: S.STATUS_COLOR[st], opacity: 0.85, borderColor: '#ffffff', borderWidth: 0.8,
-            shadowBlur: 3, shadowColor: 'rgba(27,36,48,.25)' },
-          emphasis: { itemStyle: { opacity: 1 }, scale: 1.35 },
-          z: isDev ? 4 : 3
-        };
-        if (isDev) base.rippleEffect = { brushType: 'stroke', scale: 3.2, period: 4.5 };
-        return base;
+    var series = S.STATUS_ORDER.map(function(st) {
+      var pts = [];
+      filtered.forEach(function(r) {
+        if (r[4] === st && r[7] && r[8]) pts.push({ name: r[0], value: [r[8], r[7], r[6]], row: r });
       });
+      pts.sort(function(a, b) { return a.value[2] - b.value[2]; }); // 小点先渲染，大点在上层
+      return {
+        name: st, type: 'scatter', coordinateSystem: 'geo', data: pts,
+        symbolSize: function(v) { return Math.max(3, Math.min(26, Math.sqrt(v[2]) / 2.3)); },
+        itemStyle: { color: S.STATUS_COLOR[st], opacity: 0.85, borderColor: '#ffffff', borderWidth: 0.8 },
+        emphasis: { itemStyle: { opacity: 1 } },
+        z: 3
+      };
+    });
     map.setOption({
-      animation: true, animationDurationUpdate: 600, animationEasingUpdate: 'cubicInOut',
+      animation: false,
       backgroundColor: '#d9e5ea',
       tooltip: Object.assign({}, S.EC.tooltip, {
         formatter: function(p) {
@@ -225,7 +223,6 @@
     var opt = map.getOption();
     if (opt.geo && opt.geo[0]) curView = { center: opt.geo[0].center, zoom: opt.geo[0].zoom };
   });
-
   function flyTo(view) {
     curView = { center: view.center.slice(), zoom: view.zoom };
     map.setOption({ geo: { center: curView.center, zoom: curView.zoom } });
@@ -300,62 +297,31 @@
     if (v) flyTo(v);
   }
 
-  /* ===== 侧栏排行 ===== */
-  var METRIC_LABEL = { cap: '装机 GW', units: '机组数', plants: '电厂数' };
-  function rankData(rows) {
-    var m = {};
-    rows.forEach(function(r) {
-      var g = m[r[2]] || (m[r[2]] = { cap: 0, units: 0, plants: {} });
-      g.cap += r[6]; g.units++; g.plants[r[0]] = 1;
-    });
-    return Object.keys(m).map(function(k) {
-      return { name: k, cap: m[k].cap / 1000, units: m[k].units, plants: Object.keys(m[k].plants).length };
-    });
+  /* ===== 徽标 + URL 同步 + 主流程 ===== */
+  function renderBadge() {
+    var cap = 0;
+    filtered.forEach(function(r) { cap += r[6]; });
+    document.getElementById('map-badge').textContent =
+      filtered.length.toLocaleString() + ' 台机组 · ' + (cap / 1000).toFixed(1) + ' GW';
   }
-  function renderRank() {
-    var all = rankData(filtered).sort(function(a, b) { return b[state.metric] - a[state.metric]; });
-    var top = all.slice(0, 15);
-    var total = all.reduce(function(s, d) { return s + d[state.metric]; }, 0) || 1;
-    var max = top.length ? top[0][state.metric] : 1;
-    var fmt = function(v) { return state.metric === 'cap' ? v.toFixed(1) : v.toLocaleString(); };
-    document.getElementById('rank-list').innerHTML = top.map(function(d, i) {
-      return '<div class="rank-row' + (state.country === d.name ? ' on-cty' : '') + '" data-cty="' + S.esc(d.name) + '">' +
-        '<span class="rank-i">' + (i + 1) + '</span>' +
-        '<span class="rank-name">' + S.esc(S.cnCountry(d.name)) + '</span>' +
-        '<span class="rank-bar"><i style="width:' + Math.max(4, d[state.metric] / max * 100).toFixed(0) + '%"></i></span>' +
-        '<span class="rank-pct">' + (d[state.metric] / total * 100).toFixed(0) + '%</span>' +
-        '<span class="rank-val">' + fmt(d[state.metric]) + '</span></div>';
-    }).join('') || '<div class="rank-empty">无匹配数据</div>';
-    Array.prototype.forEach.call(document.querySelectorAll('.rank-row'), function(el) {
-      el.addEventListener('click', function() { pickCty(el.getAttribute('data-cty')); });
-    });
-    document.getElementById('side-sub').textContent =
-      '按' + METRIC_LABEL[state.metric] + '排序 · ' + filtered.length.toLocaleString() + ' 台机组';
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('#rank-seg button'), function(btn) {
-    btn.addEventListener('click', function() {
-      state.metric = btn.getAttribute('data-m');
-      Array.prototype.forEach.call(document.querySelectorAll('#rank-seg button'), function(b) { b.classList.remove('on'); });
-      btn.classList.add('on');
-      renderRank();
-    });
-  });
-
-  /* ===== URL 同步 + 主流程 ===== */
   function syncUrl() {
     var q = new URLSearchParams();
     if (state.statuses.length && state.statuses.length !== S.STATUS_ORDER.length) q.set('status', state.statuses.join(','));
-    if (state.region) q.set('region', state.region);
-    if (state.fuel) q.set('fuel', state.fuel);
+    if (state.regions.length && state.regions.length !== REGION_ITEMS.length) q.set('region', state.regions.join(','));
+    if (state.fuels.length && state.fuels.length !== FUEL_ITEMS.length) q.set('fuel', state.fuels.join(','));
     if (state.country) q.set('country', state.country);
     var s = q.toString();
     history.replaceState(null, '', s ? '?' + s : location.pathname);
   }
   function applyFilter() {
-    rfFiltered = baseFiltered();
-    filtered = S.filterRows(rfFiltered, { status: state.statuses, country: '', kw: '' });
-    if (state.country) filtered = filtered.filter(function(r) { return r[2] === state.country; });
-    renderChips(); renderKpis(filtered); renderMap(); renderRank(); syncUrl();
+    filtered = RAW.filter(function(r) {
+      if (state.statuses.length && state.statuses.indexOf(r[4]) < 0) return false;
+      if (state.regions.length && state.regions.indexOf(r[3]) < 0) return false;
+      if (state.fuels.length && state.fuels.indexOf(r[5]) < 0) return false;
+      if (state.country && r[2] !== state.country) return false;
+      return true;
+    });
+    renderMap(); renderBadge(); syncUrl();
   }
   applyFilter();
   if (state.country) {
