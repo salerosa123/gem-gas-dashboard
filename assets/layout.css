@@ -305,6 +305,77 @@ details.dict .dict-body { margin-top: 0.8rem; }
 .mini-table th { text-align: left; color: var(--muted); font-weight: 600; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--rule); font-size: 0.76rem; }
 .mini-table td { padding: 0.42rem 0.6rem; border-top: 1px solid #f0eee8; }
 
+/* ===== 首页：OWID 式图文洞察流 ===== */
+.scale-line { font-size: 0.95rem; color: var(--muted); margin-top: 1.1rem; }
+.scale-line b { color: var(--ink); font-family: 'GeistMono', monospace; font-weight: 600; }
+.insight-article {
+  display: grid; grid-template-columns: 5fr 4fr; gap: 2.2rem; align-items: center;
+  padding: 2.2rem 0; border-top: 1px solid var(--rule);
+}
+.insight-article:first-of-type { border-top: none; }
+.insight-article.flip .ia-chart { order: 2; }
+.insight-article .ia-chart { min-width: 0; }
+.insight-article .ia-chart .chart-holder { height: 340px; }
+.insight-article .ia-prose .tag {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: var(--accent);
+  text-transform: uppercase; margin-bottom: 0.5rem;
+}
+.insight-article .ia-prose h3 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.3; margin-bottom: 0.7rem; }
+.insight-article .ia-prose p { font-size: 0.92rem; color: var(--muted); margin-bottom: 0.6rem; }
+.insight-article .ia-prose p b { color: var(--ink); }
+.insight-article .ia-prose .go { display: inline-block; margin-top: 0.5rem; font-size: 0.86rem; font-weight: 600; text-decoration: none; }
+.insight-article .ia-prose .go::after { content: ' →'; }
+@media (max-width: 900px) {
+  .insight-article, .insight-article.flip { grid-template-columns: 1fr; }
+  .insight-article.flip .ia-chart { order: 0; }
+}
+
+/* ===== 分析工作台 ===== */
+.wb-panel {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 1rem 1.15rem; margin-bottom: 1.1rem;
+}
+.wb-controls { display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: flex-end; }
+.wb-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.wb-field label { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+.wb-field select {
+  background: var(--bg); color: var(--ink); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 0.45rem 0.65rem; font-size: 0.86rem; outline: none; min-width: 130px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.wb-field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
+.wb-chart-card {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 1.05rem 1.15rem; margin-bottom: 1.1rem;
+}
+.wb-chart-card .wb-chart-title { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.15rem; }
+.wb-chart-card .wb-chart-sub { font-size: 0.76rem; color: var(--faint); margin-bottom: 0.4rem; }
+#wb-chart { width: 100%; height: 460px; }
+.agg-wrap { overflow: auto; max-height: 420px; border: 1px solid var(--rule); border-radius: 10px; }
+.agg-wrap table { min-width: 640px; }
+
+/* ===== 报告面板 ===== */
+.report-panel {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 1.6rem 1.8rem; margin-top: 1.1rem; display: none;
+}
+.report-panel.show { display: block; }
+.report-panel .rp-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.9rem; border-bottom: 1px solid var(--rule); }
+.report-panel .rp-head h3 { font-size: 1.05rem; font-weight: 750; }
+.report-panel .rp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.report-body { max-width: 56rem; }
+.report-body h2 { font-size: 1.3rem; font-weight: 800; margin: 1.4rem 0 0.6rem; }
+.report-body h2:first-child { margin-top: 0; }
+.report-body h4 { font-size: 1rem; font-weight: 700; margin: 1.1rem 0 0.4rem; }
+.report-body p { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.55rem; }
+.report-body p b { color: var(--ink); }
+.report-body ul { padding-left: 1.2rem; margin-bottom: 0.6rem; }
+.report-body li { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.3rem; }
+.report-body li b { color: var(--ink); }
+.report-body table { min-width: 0; width: 100%; font-size: 0.84rem; margin: 0.5rem 0 0.8rem; }
+.report-body .rp-chart-img { max-width: 100%; border: 1px solid var(--rule); border-radius: 10px; margin: 0.4rem 0 0.8rem; }
+.report-body .rp-meta { font-size: 0.76rem; color: var(--faint); }
+
 /* ===== 页脚 ===== */
 footer.site-footer { margin-top: 3rem; border-top: 1px solid var(--rule); padding-top: 1.6rem; }
 footer .foot-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 2rem; }
