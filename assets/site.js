@@ -121,31 +121,36 @@
         '<a class="brand" href="index.html">' +
           '<div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9s1.4-6.4 3.9-9z"/></svg></div>' +
           '<div class="name">GOGPT 数据观察站<small>Global Oil &amp; Gas Plant Tracker</small></div>' +
-          '<span class="ver-pill">v' + SITE_VERSION + '</span>' +
         '</a>' +
         '<nav class="nav">' + navHtml + '</nav>' +
-        '<div class="actions"><a class="btn primary" href="' + FEISHU_BASE + '" target="_blank" rel="noopener">飞书数据库</a></div>' +
       '</div>';
     document.body.insertBefore(topbar, document.body.firstChild);
 
     var foot = document.createElement('footer');
     foot.className = 'site-footer';
-    foot.innerHTML =
-      '<div class="wrap" style="padding-bottom:0">' +
-        '<div class="foot-grid">' +
-          '<div><h4>GOGPT 数据观察站</h4>' +
-            '<p class="foot-note">基于 Global Energy Monitor 全球油气电厂追踪（GOGPT）公开数据构建的非官方可视化站点，数据以 GEM 官方发布为准，每半年同步更新。</p></div>' +
-          '<div><h4>本站</h4><ul>' +
-            NAV_ITEMS.map(function(it) { return '<li><a href="' + it[0] + '">' + it[1] + '</a></li>'; }).join('') +
-          '</ul></div>' +
-          '<div><h4>数据与协作</h4><ul>' +
-            '<li><a href="' + GEM_PAGE + '" target="_blank" rel="noopener">GEM 项目主页</a></li>' +
-            '<li><a href="https://github.com/GlobalEnergyMonitor/features-maps" target="_blank" rel="noopener">GEM 数据仓库</a></li>' +
-            '<li><a href="' + FEISHU_BASE + '" target="_blank" rel="noopener">飞书多维表格数据库</a></li>' +
-          '</ul></div>' +
-        '</div>' +
-        '<div class="credit"><span>数据版本 GOGPT ' + SITE_VERSION + ' · 13,895 条机组记录 · 180 个国家/地区</span><span>CC BY 4.0（数据）</span></div>' +
-      '</div>';
+    if (page === 'about.html') {
+      foot.innerHTML =
+        '<div class="wrap" style="padding-bottom:0">' +
+          '<div class="foot-grid">' +
+            '<div><h4>GOGPT 数据观察站</h4>' +
+              '<p class="foot-note">基于 Global Energy Monitor 全球油气电厂追踪（GOGPT）公开数据构建的非官方可视化站点，数据以 GEM 官方发布为准，每半年同步更新。</p></div>' +
+            '<div><h4>本站</h4><ul>' +
+              NAV_ITEMS.map(function(it) { return '<li><a href="' + it[0] + '">' + it[1] + '</a></li>'; }).join('') +
+            '</ul></div>' +
+            '<div><h4>数据与协作</h4><ul>' +
+              '<li><a href="' + GEM_PAGE + '" target="_blank" rel="noopener">GEM 项目主页</a></li>' +
+              '<li><a href="https://github.com/GlobalEnergyMonitor/features-maps" target="_blank" rel="noopener">GEM 数据仓库</a></li>' +
+              '<li><a href="' + FEISHU_BASE + '" target="_blank" rel="noopener">飞书多维表格数据库</a></li>' +
+            '</ul></div>' +
+          '</div>' +
+          '<div class="credit"><span>数据版本 GOGPT ' + SITE_VERSION + ' · 13,895 条机组记录 · 180 个国家/地区</span><span>CC BY 4.0（数据）</span></div>' +
+        '</div>';
+    } else {
+      foot.innerHTML =
+        '<div class="wrap" style="padding-bottom:0">' +
+          '<div class="credit"><span>数据版本 GOGPT ' + SITE_VERSION + ' · 数据源 <a href="' + GEM_PAGE + '" target="_blank" rel="noopener">Global Energy Monitor</a></span><span>CC BY 4.0（数据）</span></div>' +
+        '</div>';
+    }
     document.body.appendChild(foot);
   }
 
