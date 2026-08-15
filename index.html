@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GOGPT 数据观察站 · 全球油气电厂数据</title>
-<meta name="description" content="基于 Global Energy Monitor 全球油气电厂追踪（GOGPT）的可视化站点：13,895 台机组、180 个国家/地区、3,470.8 GW 装机容量。">
+<title>GOGPT 数据观察站 · 用数据看懂全球油气电力</title>
+<meta name="description" content="基于 Global Energy Monitor 全球油气电厂追踪（GOGPT）的数据洞察：13,895 台机组、180 个国家/地区、3,470.8 GW 装机容量。">
 <link rel="stylesheet" href="assets/layout.css">
 </head>
 <body>
@@ -13,46 +13,61 @@
 
 <section class="hero">
   <div class="overline">Global Energy Monitor · GOGPT · 每半年更新</div>
-  <h1>全球油气电厂，<br><em>一张图看懂。</em></h1>
-  <div class="sub">逐机组记录全球 5,853 座油气电厂的容量、状态、燃料与投运年份：13,895 台机组、180 个国家/地区、合计 3,470.8 GW 装机容量。</div>
-  <div class="cta">
-    <a class="btn primary big" href="map.html">打开全球地图</a>
-    <a class="btn big" href="data.html">浏览数据库</a>
-  </div>
+  <h1>用逐台机组的数据，<br><em>看懂全球油气电力。</em></h1>
+  <div class="sub">我们把 Global Energy Monitor 的全球油气电厂追踪数据做成了可读、可查、可分析的中文数据站点——每一张图都能点进分析工具继续挖。</div>
+  <div class="scale-line"><b>13,895</b> 台机组 · <b>5,853</b> 座电厂 · <b>180</b> 个国家/地区 · <b>3,470.8</b> GW 装机容量 · 数据全部开放</div>
 </section>
 
-<section class="kpis" id="kpis"></section>
-
-<div class="sec-head">
-  <h2>三个数字看全局</h2>
-  <span class="hint">基于 GOGPT 最新版数据实算</span>
-</div>
-<section class="insights">
-  <div class="insight">
+<!-- 洞察 1：存量结构 -->
+<article class="insight-article">
+  <div class="ia-chart"><div class="chart-holder" id="ic-status"></div></div>
+  <div class="ia-prose">
     <div class="tag">存量结构</div>
     <h3>62% 的装机已在运行，油气电力进入存量时代</h3>
-    <p>全球 3,470.8 GW 油气装机中，<b>2,163.2 GW 已在运</b>；开发中（在建+前期+宣布）801.7 GW，另有 506 GW 已取消、搁置或退役。</p>
-    <div class="mini-chart" id="ic-status"></div>
-    <a class="go" href="analysis.html">看完整结构分析</a>
+    <p>全球 3,470.8 GW 油气发电装机中，<b>2,163.2 GW 已在运</b>，占总量约六成。仍在开发管线中的项目（在建+前期开发+已宣布）合计 801.7 GW，另有 506 GW 项目已取消、搁置或退役。</p>
+    <p>这意味着即便不再有任何新项目宣布，现有管线仍将带来约 23% 的装机增长——但相比新能源的扩张速度，油气电力的角色正在从"增长主力"转向"存量调节"。</p>
+    <a class="go" href="analysis.html?dim=status">在分析工具中按状态探索</a>
   </div>
-  <div class="insight">
+</article>
+
+<!-- 洞察 2：增量去向 -->
+<article class="insight-article flip">
+  <div class="ia-chart"><div class="chart-holder" id="ic-dev"></div></div>
+  <div class="ia-prose">
     <div class="tag">增量去向</div>
     <h3>新增产能的 62% 流向亚洲</h3>
-    <p>开发中的 801.7 GW 中，亚洲占 <b>497.4 GW</b>——超过美洲（144.6）、欧洲（87.2）、非洲（65.5）与大洋洲（7.0）的总和。</p>
-    <div class="mini-chart" id="ic-dev"></div>
-    <a class="go" href="map.html?status=%E5%9C%A8%E5%BB%BA,%E5%89%8D%E6%9C%9F%E5%BC%80%E5%8F%91,%E5%B7%B2%E5%AE%A3%E5%B8%83">在地图上看开发中项目</a>
+    <p>开发中的 801.7 GW 里，亚洲独占 <b>497.4 GW</b>——超过美洲（144.6 GW）、欧洲（87.2 GW）、非洲（65.5 GW）与大洋洲（7.0 GW）的总和。</p>
+    <p>中国、越南、巴基斯坦、孟加拉等国的在建与拟建气电项目，是这一轮增量的主要来源；欧美的开发管线则明显收缩，新建项目越来越少。</p>
+    <a class="go" href="analysis.html?dim=region&status=%E5%9C%A8%E5%BB%BA,%E5%89%8D%E6%9C%9F%E5%BC%80%E5%8F%91,%E5%B7%B2%E5%AE%A3%E5%B8%83">在分析工具中只看开发中项目</a>
   </div>
-  <div class="insight">
-    <div class="tag">国家集中度</div>
+</article>
+
+<!-- 洞察 3：国家集中度 -->
+<article class="insight-article">
+  <div class="ia-chart"><div class="chart-holder" id="ic-top10"></div></div>
+  <div class="ia-prose">
+    <div class="tag">国家格局</div>
     <h3>Top 10 国家掌握全球 56% 的装机</h3>
-    <p>美国以 <b>700.2 GW</b> 遥遥领先（占全球 20%），中国 352.8 GW 居第二，俄罗斯、日本、越南紧随其后。</p>
-    <div class="mini-chart" id="ic-top10"></div>
-    <a class="go" href="data.html">到数据库里逐条查证</a>
+    <p>美国以 <b>700.2 GW</b> 遥遥领先，占全球约五分之一；中国 352.8 GW 居第二。俄罗斯、日本、越南、沙特、伊朗、巴西、墨西哥、伊拉克分列其后。</p>
+    <p>头部格局的另一面是长尾：其余 170 个国家/地区瓜分剩余 44%。越南、伊拉克等新兴市场上榜，提示油气电力需求增长的前沿正在转移。</p>
+    <a class="go" href="analysis.html?dim=country">在分析工具中按国家探索</a>
   </div>
-</section>
+</article>
+
+<!-- 洞察 4：建设周期 -->
+<article class="insight-article flip">
+  <div class="ia-chart"><div class="chart-holder" id="ic-year"></div></div>
+  <div class="ia-prose">
+    <div class="tag">历史趋势</div>
+    <h3>两轮建设高峰，塑造了今天的装机版图</h3>
+    <p>按投运年份回看，2000 年代与 2010 年代出现两轮明显高峰：前者对应美国页岩革命后的气电扩张，后者对应亚洲新兴经济体的电力建设潮。</p>
+    <p>近年单年投运量明显回落，但累计曲线仍在爬升——存量继续变大，退役消化还很有限。</p>
+    <a class="go" href="analysis.html?dim=year">在分析工具中按年份探索</a>
+  </div>
+</article>
 
 <div class="sec-head">
-  <h2>开始探索</h2>
+  <h2>继续探索</h2>
   <span class="hint">三种方式进入同一份数据</span>
 </div>
 <section class="entry-cards">
@@ -63,8 +78,8 @@
   </a>
   <a class="entry" href="analysis.html">
     <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0e7c6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12" y="8" width="3" height="10" rx="1"/><rect x="17" y="5" width="3" height="13" rx="1"/></svg></div>
-    <h3>数据分析</h3>
-    <p>状态结构、大区构成、燃料构成、国家排行与历年投运趋势，每组图表配解读。</p>
+    <h3>分析工具</h3>
+    <p>自选维度、指标与图表类型自由组合分析，一键生成中文分析报告并导出。</p>
   </a>
   <a class="entry" href="data.html">
     <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0e7c6f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></div>
@@ -83,21 +98,6 @@
   var totalGW = S.sumCap(RAW) / 1000;
   var opGW = S.sumCap(RAW.filter(function(r) { return r[4] === '在运'; })) / 1000;
   var devGW = S.sumCap(RAW.filter(function(r) { return S.DEV_STATUSES.indexOf(r[4]) >= 0; })) / 1000;
-  var plants = {}, countries = {};
-  RAW.forEach(function(r) { plants[r[0]] = 1; countries[r[2]] = 1; });
-
-  var kpis = [
-    { num: Object.keys(plants).length.toLocaleString(), label: '油气电厂（座）', color: '#0e7c6f', delta: '共 13,895 台机组' },
-    { num: totalGW.toFixed(1), unit: 'GW', label: '总装机容量', color: '#0a5c53', delta: '约 3.47 太瓦' },
-    { num: opGW.toFixed(1), unit: 'GW', label: '在运容量', color: '#159a86', delta: '占总量 ' + (opGW / totalGW * 100).toFixed(0) + '%' },
-    { num: devGW.toFixed(1), unit: 'GW', label: '开发中容量', color: '#f0a13a', delta: '在建+前期+宣布' },
-    { num: Object.keys(countries).length, label: '覆盖国家/地区', color: '#6b7688', delta: '五大洲' }
-  ];
-  document.getElementById('kpis').innerHTML = kpis.map(function(k) {
-    return '<div class="kpi" style="--kpi-color:' + k.color + '"><div class="label">' + k.label + '</div>' +
-      '<div class="num">' + k.num + (k.unit ? '<span class="unit">' + k.unit + '</span>' : '') + '</div>' +
-      '<div class="delta">' + k.delta + '</div></div>';
-  }).join('');
 
   function mk(id) {
     var c = echarts.init(document.getElementById(id));
@@ -110,22 +110,23 @@
   mk('ic-status').setOption({
     animation: false,
     tooltip: Object.assign({}, S.EC.tooltip, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(0) + '</b> GW (' + p.percent + '%)'; } }),
+    legend: { bottom: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 12, itemHeight: 8 },
     series: [{
-      type: 'pie', radius: ['52%', '76%'], center: ['50%', '50%'],
+      type: 'pie', radius: ['50%', '74%'], center: ['50%', '46%'],
       label: { show: false }, labelLine: { show: false },
       itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
       data: [
         { name: '在运', value: +opGW.toFixed(1), itemStyle: { color: '#159a86' } },
-        { name: '开发中', value: +devGW.toFixed(1), itemStyle: { color: '#f0a13a' } },
+        { name: '开发中（在建+前期+宣布）', value: +devGW.toFixed(1), itemStyle: { color: '#f0a13a' } },
         { name: '取消/搁置/退役/封存', value: +otherGW.toFixed(1), itemStyle: { color: '#c3cad4' } }
       ]
     }],
     graphic: [{
-      type: 'text', left: 'center', top: '44%',
-      style: { text: (opGW / totalGW * 100).toFixed(0) + '%', fontSize: 26, fontWeight: 800, fill: '#1b2430', fontFamily: 'BigShoulders' }
+      type: 'text', left: 'center', top: '40%',
+      style: { text: (opGW / totalGW * 100).toFixed(0) + '%', fontSize: 34, fontWeight: 800, fill: '#1b2430', fontFamily: 'BigShoulders' }
     }, {
-      type: 'text', left: 'center', top: '56%',
-      style: { text: '已在运', fontSize: 11, fill: '#6b7688' }
+      type: 'text', left: 'center', top: '53%',
+      style: { text: '已在运', fontSize: 12, fill: '#6b7688' }
     }]
   });
 
@@ -135,16 +136,16 @@
   mk('ic-dev').setOption({
     animation: false,
     tooltip: Object.assign({}, S.EC.tooltip, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW'; } }),
-    grid: { left: 44, right: 40, top: 8, bottom: 22 },
+    grid: { left: 50, right: 56, top: 16, bottom: 26 },
     xAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
     yAxis: { type: 'category', inverse: true, data: devByReg.map(function(d) { return d.name; }),
-      axisLabel: { color: '#1b2430', fontSize: 11 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+      axisLabel: { color: '#1b2430', fontSize: 12 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
     series: [{
-      type: 'bar', barWidth: 14,
+      type: 'bar', barWidth: 20,
       data: devByReg.map(function(d, i) {
-        return { value: +d.value.toFixed(1), itemStyle: { color: i === 0 ? '#0e7c6f' : '#8fc7bf', borderRadius: [0, 5, 5, 0] } };
+        return { value: +d.value.toFixed(1), itemStyle: { color: i === 0 ? '#0e7c6f' : '#8fc7bf', borderRadius: [0, 6, 6, 0] } };
       }),
-      label: { show: true, position: 'right', color: '#6b7688', fontSize: 10, formatter: function(p) { return p.value.toFixed(0); } }
+      label: { show: true, position: 'right', color: '#6b7688', fontSize: 11, formatter: function(p) { return p.value.toFixed(0) + ' GW'; } }
     }]
   });
 
@@ -153,16 +154,47 @@
   mk('ic-top10').setOption({
     animation: false,
     tooltip: Object.assign({}, S.EC.tooltip, { formatter: function(p) { return p.name + '<br/><b>' + p.value.toFixed(1) + '</b> GW'; } }),
-    grid: { left: 8, right: 8, top: 8, bottom: 44, containLabel: true },
+    grid: { left: 8, right: 8, top: 12, bottom: 52, containLabel: true },
     xAxis: { type: 'category', data: top10.map(function(d) { return S.cnCountry(d.name); }),
-      axisLabel: { color: '#6b7688', fontSize: 9, interval: 0, rotate: 32 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+      axisLabel: { color: '#6b7688', fontSize: 10, interval: 0, rotate: 30 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
     yAxis: { type: 'value', axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
     series: [{
-      type: 'bar', barWidth: 12,
+      type: 'bar', barWidth: 18,
       data: top10.map(function(d, i) {
-        return { value: +d.value.toFixed(1), itemStyle: { color: i < 2 ? '#0a5c53' : '#5aa89e', borderRadius: [4, 4, 0, 0] } };
+        return { value: +d.value.toFixed(1), itemStyle: { color: i < 2 ? '#0a5c53' : '#5aa89e', borderRadius: [5, 5, 0, 0] } };
       })
     }]
+  });
+
+  // 洞察 4：历年投运趋势
+  var m = {};
+  RAW.forEach(function(r) {
+    if (r[9] && r[9] >= 1930 && r[9] <= 2035 && (r[4] === '在运' || r[4] === '封存' || r[4] === '退役')) {
+      var y = r[9] < 1980 ? 1979 : r[9];
+      m[y] = (m[y] || 0) + r[6];
+    }
+  });
+  var years = Object.keys(m).map(Number).sort(function(a, b) { return a - b; });
+  var yearly = years.map(function(y) { return +(m[y] / 1000).toFixed(2); });
+  var cum = [], s = 0;
+  yearly.forEach(function(v) { s += v; cum.push(+s.toFixed(1)); });
+  var labels = years.map(function(y) { return y === 1979 ? '<1980' : String(y); });
+  mk('ic-year').setOption({
+    animation: false,
+    tooltip: Object.assign({}, S.EC.tooltip, { trigger: 'axis', axisPointer: { type: 'shadow' } }),
+    legend: { top: 0, textStyle: { color: '#6b7688', fontSize: 11 }, itemWidth: 14, itemHeight: 8 },
+    grid: { left: 48, right: 52, top: 34, bottom: 40 },
+    xAxis: { type: 'category', data: labels, axisLabel: { color: '#6b7688', fontSize: 9 }, axisLine: S.EC.axisLine, axisTick: { show: false } },
+    yAxis: [
+      { type: 'value', name: '当年 (GW)', nameTextStyle: { color: '#9aa3b2', fontSize: 10 }, axisLabel: S.EC.axisLabel, splitLine: S.EC.splitLine },
+      { type: 'value', name: '累计 (GW)', nameTextStyle: { color: '#9aa3b2', fontSize: 10 }, axisLabel: S.EC.axisLabel, splitLine: { show: false } }
+    ],
+    series: [
+      { name: '当年投运', type: 'bar', data: yearly, barWidth: '58%',
+        itemStyle: { color: '#8fc7bf', borderRadius: [3, 3, 0, 0] }, emphasis: { itemStyle: { color: '#0e7c6f' } } },
+      { name: '累计投运', type: 'line', yAxisIndex: 1, data: cum, symbol: 'none', smooth: 0.15,
+        lineStyle: { color: '#c47a12', width: 2.5 } }
+    ]
   });
 })();
 </script>
