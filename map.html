@@ -59,7 +59,7 @@
 <script src="assets/world.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/site.js?v=2"></script>
-<script src="assets/ai2.js"></script>
+<script src="assets/ai2.js?v=2"></script>
 <script>
 (function() {
   'use strict';
@@ -367,7 +367,7 @@
     aiAsking = true;
     var btn = document.getElementById('ai-ask');
     btn.disabled = true; btn.textContent = '思考中…';
-    AI.chat(NL_SYS, q, { temperature: 0.1, max_tokens: 400 }, function(err, text) {
+    AI.chat(NL_SYS, q, { max_tokens: 1500 }, function(err, text) {
       aiAsking = false; btn.disabled = false; btn.textContent = '问数据';
       if (err) { showAiNote('<b>出错了：</b>' + S.esc(err.message)); return; }
       var j = AI.extractJSON(text);
@@ -447,7 +447,7 @@
     var btn = document.getElementById('ai-read'); btn.disabled = true;
     var st = filteredStats();
     var userMsg = '筛选条件：' + currentFilterDesc() + '\n统计摘要：' + JSON.stringify(st);
-    AI.chat(READ_SYS, userMsg, { temperature: 0.5, max_tokens: 900 }, function(err, text) {
+    AI.chat(READ_SYS, userMsg, { max_tokens: 2000 }, function(err, text) {
       aiReading = false; btn.disabled = false;
       if (err) { body.innerHTML = '<p style="color:var(--c-cancelled)">出错了：' + S.esc(err.message) + '</p>'; return; }
       body.innerHTML = text.trim().split(/\n{2,}|\n/).filter(function(s) { return s.trim(); })
