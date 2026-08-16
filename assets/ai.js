@@ -88,10 +88,9 @@
     if (!getKey()) { openSettings(); cb(new Error('未设置 API Key')); return; }
     var body = {
       model: getModel(),
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      temperature: opts.temperature != null ? opts.temperature : 0.3,
-      max_tokens: opts.max_tokens || 1500
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
     };
+    if (opts.max_tokens) body.max_tokens = opts.max_tokens;
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getKey() },
