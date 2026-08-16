@@ -3,13 +3,18 @@
 (function() {
   'use strict';
   var API_URL = 'https://api.moonshot.cn/v1/chat/completions';
-  var MODELS = ['kimi-k2-0711-preview', 'moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'];
+  var MODELS = ['kimi-k3', 'kimi-k2-0905-preview', 'kimi-k2-turbo-preview', 'kimi-k2-thinking', 'moonshot-v1-8k', 'moonshot-v1-128k'];
   var LS_KEY = 'gogpt_kimi_key', LS_MODEL = 'gogpt_kimi_model';
 
   function getKey() { try { return localStorage.getItem(LS_KEY) || ''; } catch (e) { return ''; } }
   function setKey(k) { try { localStorage.setItem(LS_KEY, k.trim()); } catch (e) {} }
   function clearKey() { try { localStorage.removeItem(LS_KEY); } catch (e) {} }
-  function getModel() { try { return localStorage.getItem(LS_MODEL) || MODELS[0]; } catch (e) { return MODELS[0]; } }
+  function getModel() {
+    try {
+      var m = localStorage.getItem(LS_MODEL) || '';
+      return MODELS.indexOf(m) >= 0 ? m : MODELS[0];
+    } catch (e) { return MODELS[0]; }
+  }
   function setModel(m) { try { localStorage.setItem(LS_MODEL, m); } catch (e) {} }
 
   /* ===== 设置面板（自动注入页面） ===== */
