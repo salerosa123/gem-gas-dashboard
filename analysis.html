@@ -162,7 +162,7 @@
 <script src="./_shared/js/echarts.min.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/site.js?v=2"></script>
-<script src="assets/ai2.js"></script>
+<script src="assets/ai2.js?v=2"></script>
 <script>
 (function() {
   'use strict';
@@ -1104,7 +1104,7 @@
     aiBusy = true;
     var btn = document.getElementById('rp-ai');
     btn.disabled = true; btn.textContent = '✦ 撰写中…';
-    AI.chat(REPORT_SYS, buildAiSummary(), { temperature: 0.5, max_tokens: 1600 }, function(err, text) {
+    AI.chat(REPORT_SYS, buildAiSummary(), { max_tokens: 3000 }, function(err, text) {
       aiBusy = false; btn.disabled = false; btn.textContent = '✦ AI 智能洞察';
       if (err) { toast('AI 调用失败：' + err.message); return; }
       lastBlocks = buildReport();
