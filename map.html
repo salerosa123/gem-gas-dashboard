@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>全球地图 · GOGPT 数据观察站</title>
 <meta name="description" content="全球 13,895 台油气发电机组逐一上图：按状态着色、按容量定大小，支持国家搜索定位、多维多选筛选与全屏浏览。">
-<link rel="stylesheet" href="assets/layout.css?v=4">
+<link rel="stylesheet" href="assets/layout.css?v=5">
 </head>
 <body>
 <div class="wrap" style="padding-top:1.2rem">
@@ -24,6 +24,13 @@
     <span class="drop-spring"></span>
     <button class="ms-reset" id="f-reset">重置</button>
   </div>
+  <div class="map-ai">
+    <span class="ai-ic">✦</span>
+    <input type="text" id="ai-q" placeholder="问数据：试试「2020年后投运的亚洲天然气电厂」「美国在运机组」…" autocomplete="off">
+    <button class="ai-btn" id="ai-ask">问数据</button>
+    <button class="ai-btn ghost" id="ai-read">AI 解读当前视图</button>
+  </div>
+  <div class="ai-note" id="ai-note"></div>
 </div>
 
 <div class="map-panel" id="map-panel">
@@ -33,6 +40,11 @@
     <button id="btn-fs" title="全屏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
   </div>
   <div class="map-badge" id="map-badge"></div>
+  <div class="ai-panel" id="ai-panel">
+    <div class="ai-panel-head"><span class="t">✦ AI 智能解读</span><button class="ai-x" id="ai-panel-close">×</button></div>
+    <div class="ai-panel-body" id="ai-panel-body"></div>
+    <div class="ai-panel-foot">由 Kimi 基于当前筛选结果的统计摘要生成，仅供参考</div>
+  </div>
   <div class="detail-card" id="detail-card">
     <button class="dc-close" id="dc-close">×</button>
     <h4 id="dc-name"></h4>
@@ -47,6 +59,7 @@
 <script src="assets/world.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/site.js?v=2"></script>
+<script src="assets/ai.js?v=1"></script>
 <script>
 (function() {
   'use strict';
@@ -54,7 +67,8 @@
   var params = S.getParams();
   var state = {
     statuses: params.status.filter(function(st) { return S.STATUS_ORDER.indexOf(st) >= 0; }),
-    regions: [], fuels: [], country: params.country || ''
+    regions: [], fuels: [], country: params.country || '',
+    yearMin: 0, yearMax: 0
   };
 
   /* ===== 候选项 ===== */
@@ -145,9 +159,10 @@
   document.addEventListener('click', closeAllMsel);
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAllMsel(); });
   document.getElementById('f-reset').addEventListener('click', function() {
-    state = { statuses: [], regions: [], fuels: [], country: '' };
+    state = { statuses: [], regions: [], fuels: [], country: '', yearMin: 0, yearMax: 0 };
     mStatus.set([]); mRegion.set([]); mFuel.set([]);
     document.getElementById('cty-search').value = '';
+    hideAiNote();
     homeView(); applyFilter();
   });
 
@@ -319,10 +334,130 @@
       if (state.regions.length && state.regions.indexOf(r[3]) < 0) return false;
       if (state.fuels.length && state.fuels.indexOf(r[5]) < 0) return false;
       if (state.country && r[2] !== state.country) return false;
+      if (state.yearMin && (!r[9] || r[9] < state.yearMin)) return false;
+      if (state.yearMax && (!r[9] || r[9] > state.yearMax)) return false;
       return true;
     });
     renderMap(); renderBadge(); syncUrl();
   }
+  /* ===== AI 功能（Kimi） ===== */
+  var AI = window.KIMI;
+  var aiNoteEl = document.getElementById('ai-note');
+  function showAiNote(html) { aiNoteEl.innerHTML = html; aiNoteEl.classList.add('show'); }
+  function hideAiNote() { aiNoteEl.classList.remove('show'); }
+
+  /* --- ① 问数据：自然语言 → 筛选条件 --- */
+  var NL_SYS =
+    '你是全球油气电厂数据库的筛选助手。数据库每台机组有以下可筛选维度：\n' +
+    '- status（状态），只能取：' + S.STATUS_ORDER.join('、') + '\n' +
+    '- region（大区），只能取：' + REGION_ITEMS.map(function(i) { return i.v; }).join('、') + '\n' +
+    '- fuel（燃料），只能取：' + FUEL_ITEMS.map(function(i) { return i.v; }).join('、') + '\n' +
+    '- country（国家，英文名，如 China、Japan、United States）\n' +
+    '- 投运年份 yearMin / yearMax（整数年份）\n' +
+    '用户用中文描述想看的机组，你把它翻译成筛选条件，只输出一个 JSON 对象，不要输出其他任何文字：\n' +
+    '{"statuses":[],"regions":[],"fuels":[],"country":"","yearMin":0,"yearMax":0,"note":"用一句中文说明你的理解"}\n' +
+    '规则：数组为空表示该维度不限制；yearMin/yearMax 为 0 表示不限；country 必须是英文名，不确定就留空；' +
+    '「新建/开发中」通常指 在建、前期开发、已宣布 三种状态；「老机组」等无法用现有维度表达的条件在 note 里说明，不要编造字段。';
+
+  var aiAsking = false;
+  function aiAsk() {
+    var q = document.getElementById('ai-q').value.trim();
+    if (!q) { AI.toast('先输入想查的内容'); return; }
+    if (aiAsking) return;
+    aiAsking = true;
+    var btn = document.getElementById('ai-ask');
+    btn.disabled = true; btn.textContent = '思考中…';
+    AI.chat(NL_SYS, q, { temperature: 0.1, max_tokens: 400 }, function(err, text) {
+      aiAsking = false; btn.disabled = false; btn.textContent = '问数据';
+      if (err) { showAiNote('<b>出错了：</b>' + S.esc(err.message)); return; }
+      var j = AI.extractJSON(text);
+      if (!j) { showAiNote('<b>没看懂 AI 的回答，请换个说法再试。'); return; }
+      var ok = function(v, arr) { return arr.indexOf(v) >= 0; };
+      state.statuses = (j.statuses || []).filter(function(v) { return ok(v, S.STATUS_ORDER); });
+      state.regions = (j.regions || []).filter(function(v) { return ok(v, REGION_ITEMS.map(function(i) { return i.v; })); });
+      state.fuels = (j.fuels || []).filter(function(v) { return ok(v, FUEL_ITEMS.map(function(i) { return i.v; })); });
+      state.yearMin = (+j.yearMin) || 0;
+      state.yearMax = (+j.yearMax) || 0;
+      state.country = '';
+      if (j.country) {
+        var want = String(j.country).toLowerCase();
+        Object.keys(CTY).forEach(function(en) {
+          if (en.toLowerCase() === want || S.cnCountry(en) === j.country) state.country = en;
+        });
+      }
+      mStatus.set(state.statuses); mRegion.set(state.regions); mFuel.set(state.fuels);
+      document.getElementById('cty-search').value = state.country ? (CTY[state.country] ? CTY[state.country].cn : state.country) : '';
+      applyFilter();
+      if (state.country) { var v = ctyView(state.country); if (v) flyTo(v); }
+      var cap = 0; filtered.forEach(function(r) { cap += r[6]; });
+      var parts = [];
+      if (state.statuses.length) parts.push('状态=' + state.statuses.join('/'));
+      if (state.regions.length) parts.push('大区=' + state.regions.join('/'));
+      if (state.fuels.length) parts.push('燃料=' + state.fuels.join('/'));
+      if (state.country) parts.push('国家=' + S.cnCountry(state.country));
+      if (state.yearMin || state.yearMax) parts.push('投运=' + (state.yearMin || '…') + '~' + (state.yearMax || '…'));
+      showAiNote('<b>✦ ' + S.esc(j.note || '已按你的描述筛选') + '</b>　' +
+        (parts.length ? S.esc(parts.join('，')) : '未加限制（全量）') +
+        '　→　<b>' + filtered.length.toLocaleString() + '</b> 台机组 · ' + (cap / 1000).toFixed(1) + ' GW');
+    });
+  }
+  document.getElementById('ai-ask').addEventListener('click', aiAsk);
+  document.getElementById('ai-q').addEventListener('keydown', function(e) { if (e.key === 'Enter') aiAsk(); });
+
+  /* --- ② AI 解读当前视图 --- */
+  function filteredStats() {
+    var cap = 0, byStatus = {}, byRegion = {}, byFuel = {}, byCty = {}, plants = {};
+    filtered.forEach(function(r) {
+      cap += r[6];
+      var st = byStatus[r[4]] || (byStatus[r[4]] = { u: 0, c: 0 }); st.u++; st.c += r[6];
+      var rg = byRegion[r[3]] || (byRegion[r[3]] = { u: 0, c: 0 }); rg.u++; rg.c += r[6];
+      var f = byFuel[r[5]] || (byFuel[r[5]] = { u: 0, c: 0 }); f.u++; f.c += r[6];
+      var ct = byCty[r[2]] || (byCty[r[2]] = { u: 0, c: 0 }); ct.u++; ct.c += r[6];
+      plants[r[0]] = 1;
+    });
+    function top(obj, n, cn) {
+      return Object.keys(obj).map(function(k) { return { k: cn ? S.cnCountry(k) : k, u: obj[k].u, g: +(obj[k].c / 1000).toFixed(1) }; })
+        .sort(function(a, b) { return b.g - a.g; }).slice(0, n);
+    }
+    return {
+      units: filtered.length, plants: Object.keys(plants).length, capGW: +(cap / 1000).toFixed(1),
+      byStatus: top(byStatus, 8), byRegion: top(byRegion, 6), byFuel: top(byFuel, 5), topCountries: top(byCty, 10, true)
+    };
+  }
+  function currentFilterDesc() {
+    var d = [];
+    if (state.statuses.length) d.push('状态=' + state.statuses.join('/'));
+    if (state.regions.length) d.push('大区=' + state.regions.join('/'));
+    if (state.fuels.length) d.push('燃料=' + state.fuels.join('/'));
+    if (state.country) d.push('国家=' + S.cnCountry(state.country));
+    if (state.yearMin || state.yearMax) d.push('投运年份=' + (state.yearMin || '…') + '~' + (state.yearMax || '…'));
+    return d.length ? d.join('，') : '全量数据（无筛选）';
+  }
+  var READ_SYS =
+    '你是能源行业分析师，熟悉全球油气发电格局。用户会给你一份全球油气电厂机组数据库某个筛选视图的统计摘要（JSON，容量单位 GW）。' +
+    '请写 3 段中文解读（每段 2-3 句，总字数 ≤260 字）：第 1 段总体格局（规模、头部集中度），第 2 段结构特征（状态/燃料/区域的构成与含义），第 3 段一个值得关注的观察或趋势。' +
+    '要求：基于给定数字说话，不编造数据之外的“事实”；可用 **加粗** 标记关键数字；直接输出正文段落，不要标题、不要列表、不要寒暄。';
+  var aiReading = false;
+  document.getElementById('ai-read').addEventListener('click', function() {
+    if (aiReading) return;
+    var panel = document.getElementById('ai-panel'), body = document.getElementById('ai-panel-body');
+    panel.classList.add('show');
+    body.innerHTML = '<span class="ai-dots"><i></i><i></i><i></i></span>';
+    aiReading = true;
+    var btn = document.getElementById('ai-read'); btn.disabled = true;
+    var st = filteredStats();
+    var userMsg = '筛选条件：' + currentFilterDesc() + '\n统计摘要：' + JSON.stringify(st);
+    AI.chat(READ_SYS, userMsg, { temperature: 0.5, max_tokens: 900 }, function(err, text) {
+      aiReading = false; btn.disabled = false;
+      if (err) { body.innerHTML = '<p style="color:var(--c-cancelled)">出错了：' + S.esc(err.message) + '</p>'; return; }
+      body.innerHTML = text.trim().split(/\n{2,}|\n/).filter(function(s) { return s.trim(); })
+        .map(function(p) { return '<p>' + S.esc(p.trim()).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') + '</p>'; }).join('');
+    });
+  });
+  document.getElementById('ai-panel-close').addEventListener('click', function() {
+    document.getElementById('ai-panel').classList.remove('show');
+  });
+
   applyFilter();
   if (state.country) {
     qEl.value = CTY[state.country] ? CTY[state.country].cn : state.country;
