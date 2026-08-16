@@ -88,7 +88,8 @@
     if (!getKey()) { openSettings(); cb(new Error('未设置 API Key')); return; }
     var body = {
       model: getModel(),
-      messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+      reasoning_effort: opts.reasoning_effort || 'low'
     };
     if (opts.max_tokens) body.max_tokens = opts.max_tokens;
     fetch(API_URL, {
@@ -103,8 +104,10 @@
         if (res.status === 401) m = 'API Key 无效，请检查（点顶栏「✦ AI」重新设置）';
         cb(new Error(m)); return;
       }
-      var txt = res.j && res.j.choices && res.j.choices[0] && res.j.choices[0].message && res.j.choices[0].message.content;
-      if (!txt) { cb(new Error('模型返回为空')); return; }
+      var msg = res.j && res.j.choices && res.j.choices[0] && res.j.choices[0].message;
+      // K3 思考耗尽 max_tokens 时 content 可能为空，回退取思考内容
+      var txt = msg && (msg.content || msg.reasoning_content);
+      if (!txt) { cb(new Error('模型返回为空，请重试')); return; }
       cb(null, txt);
     }).catch(function(e) {
       cb(new Error('网络请求失败：' + e.message + '（可能是跨域或网络问题）'));
